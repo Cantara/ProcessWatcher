@@ -24,7 +24,7 @@
     </appender>
 
 
-    <logger name="no.cantara.file" level="TRACE"/>
+    <logger name="no.cantara.process" level="TRACE"/>
 
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
