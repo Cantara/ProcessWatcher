@@ -29,7 +29,7 @@ public class ProcessProducerWorker implements ProcessEventsProducer {
     public void start() {
         try {
             log.debug("[start] worker thread");
-            fileEventsProducer = new FilePollEventsProducer(producerQueue);
+            fileEventsProducer = new ProcessPollEventsProducer(producerQueue);
             worker.execute(fileEventsProducer);
             log.debug("[end] dispatched events.");
         } catch (Exception e) {

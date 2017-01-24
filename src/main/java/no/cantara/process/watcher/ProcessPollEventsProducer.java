@@ -6,13 +6,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
 
-public class FilePollEventsProducer implements ProcessEventsProducer {
-    private final static Logger log = LoggerFactory.getLogger(FilePollEventsProducer.class);
+public class ProcessPollEventsProducer implements ProcessEventsProducer {
+    private final static Logger log = LoggerFactory.getLogger(ProcessPollEventsProducer.class);
 
     private final BlockingQueue<ProcessWatchEvent> queue;
 
 
-    public FilePollEventsProducer(BlockingQueue queue) {
+    public ProcessPollEventsProducer(BlockingQueue queue) {
         this.queue = queue;
     }
 
