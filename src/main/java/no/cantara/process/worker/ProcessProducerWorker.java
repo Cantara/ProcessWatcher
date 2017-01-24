@@ -16,7 +16,7 @@ public class ProcessProducerWorker implements ProcessEventsProducer {
 
     private final BlockingQueue producerQueue;
 
-    private ProcessEventsProducer fileEventsProducer;
+    private ProcessEventsProducer processEventsProducer;
 
 
     public ProcessProducerWorker() {
@@ -30,8 +30,8 @@ public class ProcessProducerWorker implements ProcessEventsProducer {
     public void start() {
         try {
             log.debug("[start] worker thread");
-            fileEventsProducer = new ProcessPollEventsProducer(producerQueue);
-            worker.execute(fileEventsProducer);
+            processEventsProducer = new ProcessPollEventsProducer(producerQueue);
+            worker.execute(processEventsProducer);
             log.debug("[end] dispatched events.");
         } catch (Exception e) {
             log.error("event failed.", e);
@@ -61,8 +61,8 @@ public class ProcessProducerWorker implements ProcessEventsProducer {
         } catch (InterruptedException e) {
             log.error("shutdown failed", e);
         }
-        if (fileEventsProducer != null) {
-            fileEventsProducer.shutdown();
+        if (processEventsProducer != null) {
+            processEventsProducer.shutdown();
         }
     }
 }

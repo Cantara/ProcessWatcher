@@ -21,7 +21,6 @@ public class ProcessWatcherTest {
                 FileSystemSupport.isMacOS(),
                 FileSystemSupport.isMacOSFileSystem());
         ;
-        log.trace("hasJDKEventDrivenFileSystem: {}", FileSystemSupport.hasJDKEventDrivenFileSystem());
 
         String processList = execCmd("ps -ef");
         String[] processArray = processList.split("\n");
