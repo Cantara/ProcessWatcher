@@ -44,8 +44,15 @@ public class SigarTest {
     public void testSigar() throws Exception {
         long currentUid = getCurrentUid();
         log.trace("Current UID: {}", currentUid);
-        Sigar sigar = new Sigar();
-        long[] procList = sigar.getProcList();
+        long[] procList = null;
+        Sigar sigar = null;
+        try {
+            sigar = new Sigar();
+            procList = sigar.getProcList();
+        } catch (UnsatisfiedLinkError e) {
+            log.warn("Unable to use sigar native API", e);
+            return;
+        }
         for(long pid : procList) {
             try {
                 ProcCred cred = sigar.getProcCred(pid);
