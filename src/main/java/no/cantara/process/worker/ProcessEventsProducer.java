@@ -1,4 +1,4 @@
-package no.cantara.process.watcher;
+package no.cantara.process.worker;
 
 public interface ProcessEventsProducer extends Runnable {
 

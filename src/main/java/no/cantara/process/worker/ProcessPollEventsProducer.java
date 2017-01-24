@@ -1,6 +1,6 @@
-package no.cantara.process.watcher;
+package no.cantara.process.worker;
 
-import no.cantara.process.watcher.event.ProcessWatchEvent;
+import no.cantara.process.event.internal.ProcessWatchEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

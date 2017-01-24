@@ -1,4 +1,4 @@
-package no.cantara.process.watcher;
+package no.cantara.process;
 
 import com.google.common.eventbus.DeadEvent;
 import com.google.common.eventbus.EventBus;
@@ -6,6 +6,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import no.cantara.process.worker.EventWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

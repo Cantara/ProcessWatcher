@@ -1,4 +1,4 @@
-package no.cantara.process.watcher.event;
+package no.cantara.process.event;
 
 /**
  * Created by totto on 24.01.17.

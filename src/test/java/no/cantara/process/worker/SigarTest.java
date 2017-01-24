@@ -1,4 +1,4 @@
-package no.cantara.process.watcher;
+package no.cantara.process.worker;
 
 import org.hyperic.sigar.ProcCpu;
 import org.hyperic.sigar.ProcCred;

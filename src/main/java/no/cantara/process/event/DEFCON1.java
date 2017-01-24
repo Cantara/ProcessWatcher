@@ -1,4 +1,4 @@
-package no.cantara.process.watcher.event;
+package no.cantara.process.event;
 
 public class DEFCON1 extends DefconEvent {
 

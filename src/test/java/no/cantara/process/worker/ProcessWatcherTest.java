@@ -1,12 +1,12 @@
-package no.cantara.process.watcher;
+package no.cantara.process.worker;
 
-import no.cantara.process.FileSystemSupport;
-import no.cantara.process.watcher.event.ProcessDTO;
+import no.cantara.process.event.ProcessDTO;
+import no.cantara.process.util.FileSystemSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-import static no.cantara.process.FileSystemSupport.execCmd;
+import static no.cantara.process.util.FileSystemSupport.execCmd;
 
 
 public class ProcessWatcherTest {

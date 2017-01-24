@@ -1,6 +1,6 @@
-package no.cantara.process.watcher;
+package no.cantara.process.worker;
 
-import no.cantara.process.FileSystemSupport;
+import no.cantara.process.util.FileSystemSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -35,9 +35,13 @@ public class CheckSigarLibraryTest {
         }
 
         List<String> dirs = Arrays.asList(System.getProperty("java.library.path").split(":"));
+        System.out.println(System.getProperty("java.library.path"));
         boolean ok = false;
         for(Iterator<String> it = dirs.iterator(); it.hasNext(); ) {
             String dir = it.next();
+            if (dir.length() < 1) {
+                continue;
+            }
             Path path = Paths.get(dir);
             log.trace("Looking for '{}' in Path: {}", checkLib, path.toAbsolutePath());
             if (!Files.exists(path)) continue;

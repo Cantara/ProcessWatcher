@@ -1,4 +1,4 @@
-package no.cantara.process.watcher.event;
+package no.cantara.process.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -10,13 +10,15 @@ public class ProcessDTO {
     private String cmd = "";
     @JsonProperty("time")
     private String time = "";
+    @JsonProperty("uid")
+    private String uid = "";
 
     public String getPid() {
         return pid;
     }
 
     public void setPid(String pid) {
-        this.pid = pid;
+        this.pid = pid.trim();
     }
 
     public String getCmd() {
@@ -24,7 +26,7 @@ public class ProcessDTO {
     }
 
     public void setCmd(String cmd) {
-        this.cmd = cmd;
+        this.cmd = cmd.trim();
     }
 
     public String getTime() {
@@ -32,7 +34,7 @@ public class ProcessDTO {
     }
 
     public void setTime(String time) {
-        this.time = time;
+        this.time = time.trim();
     }
 
     public String getUid() {
@@ -40,11 +42,12 @@ public class ProcessDTO {
     }
 
     public void setUid(String uid) {
-        this.uid = uid;
+        this.uid = uid.trim();
     }
 
-    @JsonProperty("uid")
-    private String uid = "";
+    public String getFingerPrint() {
+        return cmd + uid;
+    }
 
 
 }
