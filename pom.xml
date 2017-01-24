@@ -55,6 +55,18 @@
     </repositories>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.fusesource/sigar -->
+        <dependency>
+            <groupId>org.fusesource</groupId>
+            <artifactId>sigar</artifactId>
+            <version>1.6.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>

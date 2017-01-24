@@ -1,6 +1,5 @@
 package no.cantara.process.watcher;
 
-import com.google.common.collect.Sets;
 import com.google.common.eventbus.DeadEvent;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -9,9 +8,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.EnumSet;
-import java.util.Set;
 
 public class ProcessWatcher {
 
@@ -26,6 +22,7 @@ public class ProcessWatcher {
 
 
     private final EventBus processEventBus;
+    private EventWorker eventWorker;
 
 
 
@@ -79,6 +76,11 @@ public class ProcessWatcher {
     public void start() {
         if (!isRunning()) {
             // eventWorker = new EventWorker();
+            eventWorker = new EventWorker();
+            // processProducerWorker = new ProcessProducerWorker();
+
+            eventWorker.start();
+            // processProducerWorker.start();
 
             running = true;
             log.trace("ProcessWatcher is started with configuration:\n{}", getConfigInfo());
