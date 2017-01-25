@@ -6,6 +6,8 @@ import java.nio.file.FileSystems;
  * Created by ora on 10/20/16.
  */
 public class FileSystemSupport {
+    public static final String MACOS_LIB = "libsigar-universal64-macosx.dylib";
+    public static final String LINUX_LIB = "libsigar-amd64-linux.so";
 
     public static String getOSString() {
         return System.getProperties().get("os.name") + " " + System.getProperties().get("os.version");
