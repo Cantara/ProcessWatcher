@@ -1,11 +1,14 @@
 package no.cantara.process.util;
 
+import org.apache.commons.io.FileUtils;
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
@@ -23,6 +26,16 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
 
     private static final Logger log = LoggerFactory.getLogger(Sigar_LD_LIBRARY_PATH_Hack.class);
 
+
+    private static boolean downloadAndSaveInLibrary(String filename, String librarypath) {
+        try {
+            FileUtils.copyURLToFile(new URL("" + filename), new File(librarypath + filename));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+
+    }
     private static boolean isSigarLibraryOK() {
         long[] procList = null;
         Sigar sigar = null;
