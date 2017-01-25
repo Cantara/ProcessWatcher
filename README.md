@@ -7,3 +7,7 @@ If unknown processes are discovered after the fingerprinting period which is not
 
 The main use-case here is to try to detect "listening probes" so that the application/service can act accordingly. This approach will not try to address agressive intrusions.
 
+
+### A simple diagram showing the two phases and the event flows
+
+(https://raw.githubusercontent.com/Cantara/ProcessWatcher/master/docs/ProcessWatcherPhasesSequences.png)
