@@ -8,7 +8,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
@@ -95,6 +97,17 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
             return FileSystemSupport.MACOS_LIB;
         } else {
             return "Unknown";
+        }
+
+    }
+
+    private static void classhack(){
+        try {
+            Field charset = Charset.class.getDeclaredField("defaultCharset");
+            charset.setAccessible(true);
+            charset.set(null, null);
+        } catch (Exception e) {
+            // can't happen - the wonders of checked exceptions...
         }
 
     }
