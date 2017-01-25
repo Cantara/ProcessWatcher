@@ -10,7 +10,7 @@ The main use-case here is to try to detect "listening probes" so that the applic
 
 ### Rationale
 
-We belive that there might be tremendous value in making software services more aware of the threats that surround its running process both in developer awareness (i.e. seeing is believing - borderline security died in the last millenium) and to enable the developers and serices to make distinct actions when their environment gets infiltrated/attacked (i.e. prevent data leakages, protect customer/user data et all). 
+We belive that there might be tremendous value in making software services more aware of the threats that surround its running process both in developer awareness (i.e. seeing is believing - borderline security died in the last millenium) and to enable the developers and serices to make distinct actions when their environment gets infiltrated/attacked/breached (i.e. prevent data leakages, protect customer/user data et all). 
 
 This library is intended to implement support to explore these ideas. 
 
