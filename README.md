@@ -10,4 +10,4 @@ The main use-case here is to try to detect "listening probes" so that the applic
 
 ### A simple diagram showing the two phases and the event flows
 
-(https://raw.githubusercontent.com/Cantara/ProcessWatcher/master/docs/ProcessWatcherPhasesSequences.png)
+![ProcessWatcher event flow](https://raw.githubusercontent.com/Cantara/ProcessWatcher/master/docs/ProcessWatcherPhasesSequences.png)
