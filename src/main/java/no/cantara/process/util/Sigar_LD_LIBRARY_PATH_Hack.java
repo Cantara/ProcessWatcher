@@ -76,6 +76,7 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
                 if (dir.length() < 1) {
                     continue;
                 }
+                // We choose to use the first entry as it is the one we most likely have write-access to
                 return dir;
             }
             return checkLib;
