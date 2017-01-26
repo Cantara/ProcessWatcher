@@ -7,12 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -28,17 +24,32 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
 
     private static final Logger log = LoggerFactory.getLogger(Sigar_LD_LIBRARY_PATH_Hack.class);
 
+    public static void aplyHack() {
+        if (!isSigarLibraryOK()) {
+            String filename = getNativeLibFilename();
+            String libraryPath = getLibraryPath();
+            log.warn("Attempting to install {} into {}", filename, libraryPath);
+            downloadAndSaveInLibrary(filename, libraryPath);
+            classhack();
+        }
+    }
 
     private static boolean downloadAndSaveInLibrary(String filename, String librarypath) {
+        // https://github.com/Cantara/ProcessWatcher/raw/master/src/main/resources/nativelibs/
+        String gitHubUrlPrefix = "https://github.com/Cantara/ProcessWatcher/raw/master/src/main/resources/nativelibs/";
         try {
-            FileUtils.copyURLToFile(new URL("" + filename), new File(librarypath + filename));
+            log.info("Attempting to download {} to {}", gitHubUrlPrefix + filename, librarypath + File.separator + filename);
+            FileUtils.copyURLToFile(new URL(gitHubUrlPrefix + filename), new File(librarypath + File.separator + filename));
+            log.info("Download successfull");
             return true;
         } catch (Exception e) {
+            log.error("Unable to download and install native library", e);
             return false;
         }
 
     }
-    private static boolean isSigarLibraryOK() {
+
+    public static boolean isSigarLibraryOK() {
         long[] procList = null;
         Sigar sigar = null;
         try {
@@ -60,27 +71,12 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
             String checkLib = "";
             List<String> dirs = Arrays.asList(System.getProperty("java.library.path").split(":"));
             log.info(System.getProperty("java.library.path"));
-            boolean ok = false;
             for (Iterator<String> it = dirs.iterator(); it.hasNext(); ) {
                 String dir = it.next();
                 if (dir.length() < 1) {
                     continue;
                 }
-                Path path = Paths.get(dir);
-                log.trace("Looking for '{}' in Path: {}", checkLib, path.toAbsolutePath());
-                if (!Files.exists(path)) continue;
-                Path found = Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        if (file.endsWith(Paths.get(checkLib))) {
-                            return FileVisitResult.TERMINATE;
-                        }
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
-                log.trace("Found: {}", found.toString());
-                ok = (!".".equals(found.toString()));
-                if (ok) break;
+                return dir;
             }
             return checkLib;
         } catch (Exception e) {
@@ -103,9 +99,10 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
 
     private static void classhack(){
         try {
-            Field charset = Charset.class.getDeclaredField("defaultCharset");
-            charset.setAccessible(true);
-            charset.set(null, null);
+// this forces JVM to reload "java.library.path" property
+            Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
+            fieldSysPath.setAccessible(true);
+            fieldSysPath.set(null, null);
         } catch (Exception e) {
             // can't happen - the wonders of checked exceptions...
         }

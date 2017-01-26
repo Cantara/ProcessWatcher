@@ -1,6 +1,7 @@
 package no.cantara.process.worker;
 
 import no.cantara.process.util.FileSystemSupport;
+import no.cantara.process.util.Sigar_LD_LIBRARY_PATH_Hack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -58,5 +59,11 @@ public class CheckSigarLibraryTest {
         }
 
         assertTrue(ok);
+    }
+
+    @Test
+    public void testHack() {
+        Sigar_LD_LIBRARY_PATH_Hack.aplyHack();
+        assertTrue(Sigar_LD_LIBRARY_PATH_Hack.isSigarLibraryOK());
     }
 }
