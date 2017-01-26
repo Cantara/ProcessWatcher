@@ -1,6 +1,6 @@
 # ProcessWatcher
 
-Processwatcher is a java library for watching, fingerprinting and eventing of processes (A simplified process IDS watcher)
+ProcessWatcher is a java library for watching, fingerprinting and eventing of suspicious processes (A simplified process Intrusion Detection System/IDS threat notifier)
 
 This library will record/fingerprint the system for a configurable period (i.e. 20 minutes for servers with no logrotate or daily cronjobs or 36 hours for systems with daily jobs++). You can also whilelist processes in the configuration.
 
