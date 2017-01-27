@@ -104,7 +104,7 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
     private static void addLibraryPath(String pathToAdd) {
         try {
             System.setProperty("java.library.path", pathToAdd);
-            log.info("System.setProperty(\"java.library.path\" ", pathToAdd);
+            log.info("System.setProperty(\"java.library.path\") : {} ", pathToAdd);
 
             //set sys_paths to null
             final Field sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
