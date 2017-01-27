@@ -33,6 +33,7 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
             log.warn("Attempting to install {} into {}", filename, localLibraryPath);
             downloadAndSaveInLibrary(filename, localLibraryPath);
             classhack();
+            addLibraryPath(localLibraryPath);
         }
     }
 
