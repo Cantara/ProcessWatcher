@@ -28,13 +28,11 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
 
     public static void aplyHack() {
         addLibraryPath(localLibraryPath);
-        if (!isSigarLibraryOK()) {
             String filename = getNativeLibFilename();
             log.warn("Attempting to install {} into {}", filename, localLibraryPath);
             downloadAndSaveInLibrary(filename, localLibraryPath);
             classhack();
             addLibraryPath(localLibraryPath);
-        }
         getLibraryPath();
     }
 
@@ -42,12 +40,6 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
         // https://github.com/Cantara/ProcessWatcher/raw/master/src/main/resources/nativelibs/
         String gitHubUrlPrefix = "https://github.com/Cantara/ProcessWatcher/raw/master/src/main/resources/nativelibs/";
         try {
-            File directory = new File(String.valueOf(librarypath));
-            if (!directory.exists()) {
-                directory.mkdir();
-                // If you require it to make the entire directory path including parents,
-                // use directory.mkdirs(); here instead.
-            }
             log.info("Attempting to download {} to {}", gitHubUrlPrefix + filename, librarypath + File.separator + filename);
             FileUtils.copyURLToFile(new URL(gitHubUrlPrefix + filename), new File(librarypath + File.separator + filename));
             log.info("Download successfull");
@@ -80,7 +72,7 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
         try {
             String checkLib = "";
             List<String> dirs = Arrays.asList(System.getProperty("java.library.path").split(":"));
-            log.info(System.getProperty("java.library.path"));
+            log.info("System.getProperty(\"java.library.path\"): {} ", System.getProperty("java.library.path"));
             for (Iterator<String> it = dirs.iterator(); it.hasNext(); ) {
                 String dir = it.next();
                 if (dir.length() < 1) {
@@ -104,8 +96,18 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
      */
     private static void addLibraryPath(String pathToAdd) {
         try {
+            File directory = new File(String.valueOf(localLibraryPath));
+            if (!directory.exists()) {
+                directory.mkdir();
+                // If you require it to make the entire directory path including parents,
+                // use directory.mkdirs(); here instead.
+            }
+
             System.setProperty("java.library.path", pathToAdd);
             log.info("System.setProperty(\"java.library.path\") : {} ", pathToAdd);
+
+            //System.setProperty("LD_LIBRARY_PATH", pathToAdd);
+            //log.info("System.setProperty(\"LD_LIBRARY_PATH\") : {} ", pathToAdd);
 
             //set sys_paths to null
             final Field sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
