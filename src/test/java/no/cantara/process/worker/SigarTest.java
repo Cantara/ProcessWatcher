@@ -1,11 +1,13 @@
 package no.cantara.process.worker;
 
+import no.cantara.process.util.Sigar_LD_LIBRARY_PATH_Hack;
 import org.hyperic.sigar.ProcCpu;
 import org.hyperic.sigar.ProcCred;
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -17,6 +19,11 @@ import java.io.InputStream;
 public class SigarTest {
 
     private static final Logger log = LoggerFactory.getLogger(SigarTest.class);
+
+    @BeforeClass
+    public static void onlyOnce() {
+        Sigar_LD_LIBRARY_PATH_Hack.aplyHack();
+    }
 
     private long getCurrentUid() {
         try {
