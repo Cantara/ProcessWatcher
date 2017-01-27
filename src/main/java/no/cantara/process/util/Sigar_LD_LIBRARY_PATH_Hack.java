@@ -104,25 +104,12 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
     private static void addLibraryPath(String pathToAdd) {
         try {
             System.setProperty("java.library.path", pathToAdd);
-            final Field usrPathsField = ClassLoader.class.getDeclaredField("sys_paths");
-            usrPathsField.setAccessible(true);
+            log.info("System.setProperty(\"java.library.path\" ", pathToAdd);
 
-            //get array of paths
-            final String[] paths = (String[]) usrPathsField.get(null);
-
-            //check if the path to add is already present
-            for (String path : paths) {
-                if (path.equals(pathToAdd)) {
-                    return;
-                }
-            }
-
-            //add the new path
-            final String[] newPaths = Arrays.copyOf(paths, paths.length + 1);
-            log.info("Setting new paths: {} ", newPaths);
-            newPaths[newPaths.length - 1] = pathToAdd;
-            usrPathsField.setAccessible(true);
-            usrPathsField.set(null, newPaths);
+            //set sys_paths to null
+            final Field sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
+            sysPathsField.setAccessible(true);
+            sysPathsField.set(null, null);
         } catch (Exception e) {
             log.error("Unable to add native library path to the system", e);
         }
