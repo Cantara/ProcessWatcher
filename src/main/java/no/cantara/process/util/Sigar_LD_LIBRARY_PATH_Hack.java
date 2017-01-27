@@ -23,13 +23,15 @@ import java.util.List;
 public class Sigar_LD_LIBRARY_PATH_Hack {
 
     private static final Logger log = LoggerFactory.getLogger(Sigar_LD_LIBRARY_PATH_Hack.class);
+    private static final String localLibraryPath = "./nativelibs";
+
 
     public static void aplyHack() {
+        addLibraryPath(localLibraryPath);
         if (!isSigarLibraryOK()) {
             String filename = getNativeLibFilename();
-            String libraryPath = getLibraryPath();
-            log.warn("Attempting to install {} into {}", filename, libraryPath);
-            downloadAndSaveInLibrary(filename, libraryPath);
+            log.warn("Attempting to install {} into {}", filename, localLibraryPath);
+            downloadAndSaveInLibrary(filename, localLibraryPath);
             classhack();
         }
     }
@@ -38,6 +40,12 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
         // https://github.com/Cantara/ProcessWatcher/raw/master/src/main/resources/nativelibs/
         String gitHubUrlPrefix = "https://github.com/Cantara/ProcessWatcher/raw/master/src/main/resources/nativelibs/";
         try {
+            File directory = new File(String.valueOf(librarypath));
+            if (!directory.exists()) {
+                directory.mkdir();
+                // If you require it to make the entire directory path including parents,
+                // use directory.mkdirs(); here instead.
+            }
             log.info("Attempting to download {} to {}", gitHubUrlPrefix + filename, librarypath + File.separator + filename);
             FileUtils.copyURLToFile(new URL(gitHubUrlPrefix + filename), new File(librarypath + File.separator + filename));
             log.info("Download successfull");
@@ -87,6 +95,38 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
 
     }
 
+    /**
+     * Adds the specified path to the java library path
+     *
+     * @param pathToAdd the path to add
+     */
+    private static void addLibraryPath(String pathToAdd) {
+        try {
+            System.setProperty("java.library.path", pathToAdd);
+            final Field usrPathsField = ClassLoader.class.getDeclaredField("sys_paths");
+            usrPathsField.setAccessible(true);
+
+            //get array of paths
+            final String[] paths = (String[]) usrPathsField.get(null);
+
+            //check if the path to add is already present
+            for (String path : paths) {
+                if (path.equals(pathToAdd)) {
+                    return;
+                }
+            }
+
+            //add the new path
+            final String[] newPaths = Arrays.copyOf(paths, paths.length + 1);
+            log.info("Setting new paths: {} ", newPaths);
+            newPaths[newPaths.length - 1] = pathToAdd;
+            usrPathsField.setAccessible(true);
+            usrPathsField.set(null, newPaths);
+        } catch (Exception e) {
+            log.error("Unable to add native library path to the system", e);
+        }
+    }
+
     private static String getNativeLibFilename() {
         if (FileSystemSupport.isLinux()) {
             return FileSystemSupport.LINUX_LIB;
@@ -98,7 +138,7 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
 
     }
 
-    private static void classhack(){
+    private static void classhack() {
         try {
 // this forces JVM to reload "java.library.path" property
             Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
