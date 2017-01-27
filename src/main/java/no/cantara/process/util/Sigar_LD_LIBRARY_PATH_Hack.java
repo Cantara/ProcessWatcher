@@ -35,6 +35,7 @@ public class Sigar_LD_LIBRARY_PATH_Hack {
             classhack();
             addLibraryPath(localLibraryPath);
         }
+        getLibraryPath();
     }
 
     private static boolean downloadAndSaveInLibrary(String filename, String librarypath) {
