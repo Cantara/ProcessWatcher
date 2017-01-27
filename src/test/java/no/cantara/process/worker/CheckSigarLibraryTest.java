@@ -4,6 +4,7 @@ import no.cantara.process.util.FileSystemSupport;
 import no.cantara.process.util.Sigar_LD_LIBRARY_PATH_Hack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -22,6 +23,11 @@ public class CheckSigarLibraryTest {
 
     private static final Logger log = LoggerFactory.getLogger(CheckSigarLibraryTest.class);
     String checkLib = null;
+
+    @BeforeClass
+    public static void onlyOnce() {
+        Sigar_LD_LIBRARY_PATH_Hack.aplyHack();
+    }
 
     @Test
     public void testIfSigarOnLibraryPathExists() throws Exception {
