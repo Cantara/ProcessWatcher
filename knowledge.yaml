@@ -1,0 +1,43 @@
+version: "0.14"
+
+entity:
+  name: ProcessWatcher
+  type: open-source-library
+  description: >
+    A java library for watching, fingerprinting and eventing of processes (Proce
+    ss IDS watcher)
+
+authority:
+  owner: Cantara — Norwegian Software Development Foundation
+  repo: https://github.com/Cantara/ProcessWatcher
+  license: Apache-2.0
+  org_manifest: https://wiki.cantara.no/knowledge.yaml
+
+discovery:
+  provenance: canonical
+  confidence: medium
+  staleness_days: 30
+
+signing:
+  scheme: ed25519
+  scope: this-manifest
+  public_key: https://wiki.cantara.no/.well-known/kcp-signing-key.pub
+
+kcp_version: "0.14"
+project: ProcessWatcher
+language: en
+license: "Apache-2.0"
+runtime: Java
+indexing: open
+updated: "2026-05-07"
+  stars: 1
+
+units:
+
+  - id: readme
+    path: README.md
+    intent: "What is ProcessWatcher, what does it do, and how do I install and use it?"
+    scope: global
+    audience: [human, agent, developer]
+    validated: "2026-05-07"
+    triggers: [overview, install, usage, processwatcher, getting started]
