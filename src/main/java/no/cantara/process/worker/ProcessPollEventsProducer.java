@@ -1,87 +1,56 @@
 package no.cantara.process.worker;
 
 import no.cantara.process.event.ProcessDTO;
-import no.cantara.process.event.internal.ProcessWatchEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import no.cantara.process.event.ProcessWatchEvent;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import static no.cantara.process.util.FileSystemSupport.execCmd;
 
-public class ProcessPollEventsProducer implements ProcessEventsProducer {
-    private final static Logger log = LoggerFactory.getLogger(ProcessPollEventsProducer.class);
+/**
+ * Fallback process discovery by executing {@code ps}. Headers are suppressed and columns
+ * requested explicitly ({@code -o pid=,user=,args=}) so parsing does not depend on the
+ * platform's default {@code ps} column layout.
+ */
+public class ProcessPollEventsProducer extends AbstractProcessEventsProducer {
 
-    private final BlockingQueue<ProcessWatchEvent> queue;
-
-
-    public ProcessPollEventsProducer(BlockingQueue queue) {
-        this.queue = queue;
+    public ProcessPollEventsProducer(BlockingQueue<ProcessWatchEvent> queue) {
+        super(queue);
     }
 
     @Override
-    public void run() {
-        try {
-            String processList = execCmd("ps -ef");
-            String[] processArray = processList.split("\n");
-
-            String[] headeritems = processArray[0].split(" ");
-            int userColumn = 0;
-            int pidColumn = 0;
-            int cmdColumn = 0;
-            int timeColumn = 0;
-            int n = 0;
-            for (String headerItem : headeritems) {
-                switch (headerItem.trim()) {
-                    case "UID":
-                        userColumn = n;
-                        break;
-                    case "PID":
-                        pidColumn = n;
-                        break;
-                    case "CMD":
-                        cmdColumn = n;
-                        break;
-                    case "TIME":
-                        timeColumn = n;
-                    default:
-                        break;
-                }
-                n++;
+    public Map<Long, ProcessDTO> snapshotProcesses() throws Exception {
+        Map<Long, ProcessDTO> discoveredProcesses = new HashMap<>();
+        String processList = execCmd("ps", "-eo", "pid=,user=,args=");
+        for (String line : processList.split("\n")) {
+            ProcessDTO process = parseProcessLine(line);
+            if (process != null) {
+                discoveredProcesses.put(process.getPid(), process);
             }
-
-
-            ProcessDTO observedProcess = new ProcessDTO();
-            for (String processItem : processArray) {
-                String[] observedLine = processItem.split(" ");
-                int m = 0;
-                for (String observedItem : observedLine) {
-                    if (m == userColumn) {
-                        observedProcess.setUid(observedItem);
-                    }
-                    if (m == pidColumn) {
-                        observedProcess.setPid(observedItem);
-
-                    }
-                    if (m == cmdColumn) {
-                        observedProcess.setCmd(observedItem);
-
-                    }
-                    if (m == timeColumn) {
-                        observedProcess.setTime(observedItem);
-
-                    }
-                    m++;
-                }
-                queue.put(new ProcessWatchEvent(observedProcess));
-            }
-
-        } catch (Exception e) {
-            log.error("Unable to use fallback process exec for process monitoring");
         }
+        return discoveredProcesses;
     }
 
-    @Override
-    public void shutdown() {
+    /**
+     * @param line a {@code ps} output line on the form {@code "  pid user args..."}
+     * @return the parsed process, or null for blank or malformed lines
+     */
+    static ProcessDTO parseProcessLine(String line) {
+        String[] columns = line.trim().split("\\s+", 3);
+        if (columns.length < 3) {
+            return null;
+        }
+        try {
+            ProcessDTO process = new ProcessDTO();
+            process.setPid(Long.parseLong(columns[0]));
+            process.setUser(columns[1]);
+            process.setCommandLine(columns[2]);
+            process.setCommand(columns[2].split("\\s+", 2)[0]);
+            return process;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

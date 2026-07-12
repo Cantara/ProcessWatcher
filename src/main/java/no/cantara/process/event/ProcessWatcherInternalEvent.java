@@ -1,4 +1,4 @@
-package no.cantara.process.event.internal;
+package no.cantara.process.event;
 
 import java.lang.ref.WeakReference;
 

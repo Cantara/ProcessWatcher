@@ -1,47 +1,55 @@
 package no.cantara.process.worker;
 
 import no.cantara.process.ProcessWatcher;
+import no.cantara.process.event.ProcessWatchEvent;
+import no.cantara.process.support.ProcessWatchScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class ProcessProducerWorker implements ProcessEventsProducer {
+public class ProcessProducerWorker {
+
     private static Logger log = LoggerFactory.getLogger(ProcessProducerWorker.class);
 
-    protected static ExecutorService worker;
+    private final ExecutorService worker;
 
-    private final BlockingQueue producerQueue;
+    private final BlockingQueue<ProcessWatchEvent> producerQueue;
+
+    private final ProcessWatchScanner mode;
 
     private ProcessEventsProducer processEventsProducer;
 
-
-    public ProcessProducerWorker() {
-        this.producerQueue = new ArrayBlockingQueue(1000);
+    public ProcessProducerWorker(ProcessWatchScanner mode) {
+        this.worker = Executors.newCachedThreadPool();
+        this.producerQueue = new ArrayBlockingQueue<>(10000);
+        this.mode = mode;
     }
 
-    public BlockingQueue getQueue() {
+    public BlockingQueue<ProcessWatchEvent> getQueue() {
         return producerQueue;
     }
 
     public void start() {
         try {
             log.debug("[start] worker thread");
-            processEventsProducer = new ProcessPollEventsProducer(producerQueue);
+            if (ProcessWatchScanner.NATIVE_PROCESS_API.equals(mode)) {
+                processEventsProducer = new ProcessNativeEventsProducer(producerQueue);
+            } else if (ProcessWatchScanner.POLL_PROCESS_EXEC.equals(mode)) {
+                processEventsProducer = new ProcessPollEventsProducer(producerQueue);
+            } else {
+                throw new UnsupportedOperationException("Unknown ProcessWatchScanner mode");
+            }
             worker.execute(processEventsProducer);
             log.debug("[end] dispatched events.");
         } catch (Exception e) {
             log.error("event failed.", e);
         }
     }
-
-    @Override
-    public void run() {
-    }
-
 
     public boolean isRunning() {
         return !worker.isShutdown();

@@ -1,46 +1,50 @@
 package no.cantara.process.worker;
 
 import no.cantara.process.ProcessWatcher;
-import no.cantara.process.event.internal.ProcessWatcherInternalEvent;
+import no.cantara.process.event.ProcessWatcherInternalEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class EventWorker {
 
     private static Logger log = LoggerFactory.getLogger(EventWorker.class);
 
-    protected static ExecutorService worker;
-    private final BlockingQueue internalEventsQueue;
+    private final ExecutorService worker;
+    private final BlockingQueue<ProcessWatcherInternalEvent> internalEventsQueue;
 
     public EventWorker() {
         worker = Executors.newCachedThreadPool();
-        this.internalEventsQueue = new ArrayBlockingQueue(1000);
+        this.internalEventsQueue = new ArrayBlockingQueue<>(1000);
     }
 
     public static class EventHandler implements Runnable {
 
-        final BlockingQueue queue;
+        final BlockingQueue<ProcessWatcherInternalEvent> queue;
 
-        public EventHandler(BlockingQueue queue) {
+        public EventHandler(BlockingQueue<ProcessWatcherInternalEvent> queue) {
             this.queue = queue;
         }
 
         public void run() {
-            ProcessWatcherInternalEvent event;
-            while (true) {
+            for (; ; ) {
                 try {
-                    event = (ProcessWatcherInternalEvent) queue.take();
+                    ProcessWatcherInternalEvent event = queue.take();
                     log.debug("Processing worker thread [{}] {}", event.getSource().get(), event.getMessage());
                 } catch (InterruptedException e) {
-                    //log.error("Event failed", e);
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }
     }
 
-    public BlockingQueue getQueue() {
+    public BlockingQueue<ProcessWatcherInternalEvent> getQueue() {
         return internalEventsQueue;
     }
 

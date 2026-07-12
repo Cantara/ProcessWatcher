@@ -1,83 +1,174 @@
 package no.cantara.process.worker;
 
-import no.cantara.process.event.ProcessDTO;
+import no.cantara.process.ProcessWatcher;
+import no.cantara.process.event.ProcessWatchEvent;
+import no.cantara.process.support.ProcessWatchScanner;
+import no.cantara.process.support.ProcessWatchState;
 import no.cantara.process.util.FileSystemSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-import static no.cantara.process.util.FileSystemSupport.execCmd;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class ProcessWatcherTest {
 
     private final static Logger log = LoggerFactory.getLogger(ProcessWatcherTest.class);
 
-    @Test()
-    public void testSystemExecFallback() throws Exception {
-        log.trace("IsLinux: {}, isLinuxFileSystem: {}, isMacOS: {}, isMacOSFileSystem: {}",
-                FileSystemSupport.isLinux(),
-                FileSystemSupport.isLinuxFileSystem(),
-                FileSystemSupport.isMacOS(),
-                FileSystemSupport.isMacOSFileSystem());
-        ;
-
-        String processList = execCmd("ps -ef");
-        String[] processArray = processList.split("\n");
-
-        String[] headeritems = processArray[0].split(" ");
-        int userColumn = 0;
-        int pidColumn = 0;
-        int cmdColumn = 0;
-        int timeColumn = 0;
-        int n = 0;
-        for (String headerItem : headeritems) {
-            switch (headerItem.trim()) {
-                case "UID":
-                    userColumn = n;
-                    break;
-                case "PID":
-                    pidColumn = n;
-                    break;
-                case "CMD":
-                    cmdColumn = n;
-                    break;
-                case "TIME":
-                    timeColumn = n;
-                default:
-                    break;
-            }
-            n++;
+    /**
+     * Copies the sleep binary to a unique path so the spawned canary process is guaranteed
+     * to have a fingerprint that was not learned during the fingerprinting period.
+     */
+    private Path createCanaryBinary(String name) throws IOException {
+        Path sleepBinary = Paths.get("/usr/bin/sleep");
+        if (!Files.exists(sleepBinary)) {
+            sleepBinary = Paths.get("/bin/sleep");
         }
-
-
-        ProcessDTO observedProcess = new ProcessDTO();
-        for (String processItem : processArray) {
-            String[] observedLine = processItem.split(" ");
-            int m = 0;
-            for (String observedItem : observedLine) {
-                if (m == userColumn) {
-                    observedProcess.setUid(observedItem);
-                }
-                if (m == pidColumn) {
-                    observedProcess.setPid(observedItem);
-
-                }
-                if (m == cmdColumn) {
-                    observedProcess.setCmd(observedItem);
-
-                }
-                if (m == timeColumn) {
-                    observedProcess.setTime(observedItem);
-
-                }
-                m++;
-            }
-        }
-
-        log.trace(processList);
-
+        Path targetDir = Paths.get("target");
+        Files.createDirectories(targetDir);
+        Path canary = targetDir.resolve(name).toAbsolutePath();
+        Files.copy(sleepBinary, canary, StandardCopyOption.REPLACE_EXISTING);
+        canary.toFile().setExecutable(true);
+        return canary;
     }
 
+    @Test
+    public void testSuspiciousProcessDetection() throws Exception {
+        Path canary = createCanaryBinary("pw-canary-suspicious");
+
+        ProcessWatcher pw = ProcessWatcher.getInstance();
+        pw.setProcessScanInterval(200);
+        pw.setFingerprintingPeriod(500);
+
+        CountDownLatch suspiciousLatch = new CountDownLatch(1);
+        CountDownLatch terminatedLatch = new CountDownLatch(1);
+        AtomicReference<ProcessWatchEvent> suspiciousEvent = new AtomicReference<>();
+
+        pw.registerSuspiciousProcessHandler(event -> {
+            log.trace("Suspicious: {}", event);
+            if (event.getProcess().getCommand().contains("pw-canary-suspicious")) {
+                suspiciousEvent.set(event);
+                suspiciousLatch.countDown();
+            }
+        });
+        pw.registerProcessTerminatedHandler(event -> {
+            if (event.getProcess().getCommand().contains("pw-canary-suspicious")) {
+                terminatedLatch.countDown();
+            }
+        });
+
+        pw.start();
+        assertTrue(pw.isRunning());
+
+        // let the fingerprinting period expire (all pre-existing processes are learned)
+        Thread.sleep(1200);
+
+        Process canaryProcess = new ProcessBuilder(canary.toString(), "5").start();
+        try {
+            assertTrue(suspiciousLatch.await(20, TimeUnit.SECONDS),
+                    "Expected a suspicious process event for the canary");
+
+            ProcessWatchEvent event = suspiciousEvent.get();
+            assertEquals(event.getProcessWatchState(), ProcessWatchState.SUSPICIOUS);
+            assertNotNull(event.getDefconEvent(), "A suspicious event must carry a defcon grading");
+            int level = event.getDefconEvent().getLevel();
+            assertTrue(level >= 1 && level <= 4, "Unexpected defcon level: " + level);
+            log.info("Canary was graded: {}", event.getDefconEvent());
+        } finally {
+            canaryProcess.destroy();
+        }
+
+        assertTrue(terminatedLatch.await(20, TimeUnit.SECONDS),
+                "Expected a terminated process event for the canary");
+
+        pw.stop();
+        assertFalse(pw.isRunning());
+    }
+
+    @Test(dependsOnMethods = "testSuspiciousProcessDetection")
+    public void testWhitelistedProcessIsNotSuspicious() throws Exception {
+        Path canary = createCanaryBinary("pw-canary-whitelisted");
+
+        ProcessWatcher pw = ProcessWatcher.getInstance();
+        pw.setProcessScanInterval(200);
+        pw.setFingerprintingPeriod(500);
+        pw.whitelist(".*pw-canary-whitelisted.*");
+
+        CountDownLatch whitelistedLatch = new CountDownLatch(1);
+        ConcurrentLinkedQueue<ProcessWatchEvent> suspiciousCanaryEvents = new ConcurrentLinkedQueue<>();
+
+        pw.registerProcessStartedHandler(event -> {
+            if (event.getProcess().getCommand().contains("pw-canary-whitelisted")
+                    && ProcessWatchState.WHITELISTED.equals(event.getProcessWatchState())) {
+                whitelistedLatch.countDown();
+            }
+        });
+        pw.registerSuspiciousProcessHandler(event -> {
+            if (event.getProcess().getCommand().contains("pw-canary-whitelisted")) {
+                suspiciousCanaryEvents.add(event);
+            }
+        });
+
+        pw.start();
+        assertTrue(pw.isRunning());
+
+        Thread.sleep(1200);
+
+        Process canaryProcess = new ProcessBuilder(canary.toString(), "5").start();
+        try {
+            assertTrue(whitelistedLatch.await(20, TimeUnit.SECONDS),
+                    "Expected a started event with WHITELISTED state for the canary");
+            assertTrue(suspiciousCanaryEvents.isEmpty(),
+                    "A whitelisted process must not produce suspicious events: " + suspiciousCanaryEvents);
+        } finally {
+            canaryProcess.destroy();
+        }
+
+        pw.stop();
+    }
+
+    @Test(dependsOnMethods = "testWhitelistedProcessIsNotSuspicious")
+    public void testPollEventsScannerMode() throws Exception {
+        if (!FileSystemSupport.isLinux() && !FileSystemSupport.isMacOS()) {
+            log.info("Skipping ps based scanner test on {}", FileSystemSupport.getOSString());
+            return;
+        }
+
+        ProcessWatcher pw = ProcessWatcher.getInstance();
+        pw.forceProcessScannerMode(ProcessWatchScanner.POLL_PROCESS_EXEC);
+        assertTrue(pw.isPollEvents());
+        pw.setProcessScanInterval(200);
+        pw.setFingerprintingPeriod(60 * 1000);
+
+        CountDownLatch startedLatch = new CountDownLatch(1);
+        pw.registerProcessStartedHandler(event -> {
+            if (ProcessWatchState.LEARNING.equals(event.getProcessWatchState())) {
+                startedLatch.countDown();
+            }
+        });
+
+        pw.start();
+        assertTrue(pw.isRunning());
+
+        assertTrue(startedLatch.await(20, TimeUnit.SECONDS),
+                "Expected started events with LEARNING state from the ps based scanner");
+        assertTrue(pw.getFingerprintStore().size() > 0, "Expected fingerprints to be learned");
+
+        pw.stop();
+        pw.forceProcessScannerMode(ProcessWatchScanner.NATIVE_PROCESS_API);
+    }
 
 }
