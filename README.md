@@ -55,6 +55,28 @@ learning period, during which an intruder would have been learned as normal.
 Requires Java 17+. Process discovery uses the JDK `ProcessHandle` API by default, with a
 `ps` based fallback scanner mode - no native libraries or external dependencies are needed.
 
+### Security limitations
+
+ProcessWatcher is a naive, best-effort threat notifier, not a hardened IDS. Known limits to
+plan around:
+
+* **Trust on first use**: the fingerprinting period learns whatever is running. An intruder
+  already resident when learning starts is learned as normal and never reported. Configure a
+  baseline file (above) and manage it so learning happens on a known-clean host.
+* **Privilege is required for socket signals**: reading another process' sockets needs root or
+  `CAP_NET_RAW`/`CAP_SYS_PTRACE`. Running as an unprivileged service user, listening-probe,
+  raw-socket and sniffer escalation only apply to the watcher's own user. `start()` logs a
+  warning and `isSocketEscalationAvailable()` reports this.
+* **Polling has a blind spot**: a process that starts and exits within one scan interval may
+  never be observed. Lower `setProcessScanInterval` to narrow the window; it cannot be closed
+  by polling alone.
+* **The DEFCON grading is a coarse indication**, including the privilege heuristic (root by
+  name/uid, or an unresolved user holding a socket). Do not treat the level as authoritative.
+* **The baseline file is trusted input**: anyone who can write it can self-whitelist a
+  fingerprint. Store it with restrictive permissions (e.g. `0600`, owned by the service user).
+* **Poll (`ps`) mode is best-effort**: phantom-pid injection is filtered by reconciling against
+  live pids, but the native scanner is the default and more robust.
+
 ### Rationale
 
 We belive that there might be tremendous value in making software services more aware of the threats that surround its running process both in developer awareness (i.e. seeing is believing - borderline security died in the last millenium) and to enable the developers and serices to make distinct actions when their environment gets infiltrated/attacked/breached (i.e. prevent data leakages, protect customer/user data et all). 

@@ -41,6 +41,18 @@ public class DefconEventTest {
     }
 
     @Test
+    public void testPrivilegeHeuristic() {
+        // root by name or numeric uid is privileged regardless of sockets
+        assertTrue(DefconEvent.isPrivileged("root", false));
+        assertTrue(DefconEvent.isPrivileged("0", false));
+        // a regular user is not, even holding a socket
+        assertFalse(DefconEvent.isPrivileged("app", true));
+        // an unresolved user is privileged only when it holds a socket (implies CAP_NET_RAW etc)
+        assertFalse(DefconEvent.isPrivileged("", false));
+        assertTrue(DefconEvent.isPrivileged("", true));
+    }
+
+    @Test
     public void testEscalation() {
         DefconEvent original = DefconEvent.forLevel(4, process("app", "/opt/strange/daemon"));
 

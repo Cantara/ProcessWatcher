@@ -117,7 +117,12 @@ public abstract class DefconEvent {
      * AF_PACKET capture socket (scanners and sniffers).
      */
     public static DefconEvent classify(ProcessDTO process, FingerprintStore store) {
-        boolean privileged = PRIVILEGED_USERS.contains(process.getUser());
+        List<Integer> listeningPorts = ListeningSocketSupport.listeningPortsOf(process.getPid());
+        boolean rawSocket = ListeningSocketSupport.hasRawSocket(process.getPid());
+        boolean packetSocket = ListeningSocketSupport.hasPacketSocket(process.getPid());
+        boolean hasSocketSignal = !listeningPorts.isEmpty() || rawSocket || packetSocket;
+
+        boolean privileged = isPrivileged(process.getUser(), hasSocketSignal);
         boolean probeTool = isProbeTool(process);
 
         int baseLevel;
@@ -130,10 +135,6 @@ public abstract class DefconEvent {
         } else {
             baseLevel = 4;
         }
-
-        List<Integer> listeningPorts = ListeningSocketSupport.listeningPortsOf(process.getPid());
-        boolean rawSocket = ListeningSocketSupport.hasRawSocket(process.getPid());
-        boolean packetSocket = ListeningSocketSupport.hasPacketSocket(process.getPid());
 
         int escalations = 0;
         if (!listeningPorts.isEmpty()) {
@@ -180,6 +181,19 @@ public abstract class DefconEvent {
             default:
                 return new DEFCON5(process);
         }
+    }
+
+    /**
+     * Naive privilege heuristic. A process is treated as privileged when it runs as root
+     * (by name or uid 0), or when its owning user could not be resolved but it holds a
+     * network socket - a raw or AF_PACKET socket in particular implies CAP_NET_RAW, which is
+     * a privileged capability even without uid 0. This is deliberately a coarse indication.
+     * @param user the owning user (name or numeric uid), possibly empty when unresolved
+     * @param hasSocketSignal whether the process holds a listening, raw or packet socket
+     * @return true if the process should be graded as privileged
+     */
+    static boolean isPrivileged(String user, boolean hasSocketSignal) {
+        return PRIVILEGED_USERS.contains(user) || (user.isEmpty() && hasSocketSignal);
     }
 
     private static boolean isProbeTool(ProcessDTO process) {
