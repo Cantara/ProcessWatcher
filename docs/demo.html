@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProcessWatcher — live simulation</title>
+<meta name="description" content="Drive ProcessWatcher in your browser: spawn processes, watch the fingerprinting window learn them, and see unknown intruders graded on a live DEFCON console.">
+<style>
+  :root {
+    --ground:#f6f8fb; --surface:#ffffff; --surface-2:#eef2f7; --ink:#16202b; --ink-soft:#3a4a5a;
+    --muted:#647587; --line:#dde5ee; --line-strong:#c6d2df; --accent:#0d9488; --accent-ink:#0b7d72;
+    --accent-contrast:#ffffff; --code-bg:#0e141b; --code-ink:#d6e2ee;
+    --d1:#d1373c; --d2:#e0742f; --d3:#c69414; --d4:#5f7488; --d5:#2f9e4a;
+    --maxw:1240px; --radius:14px;
+    --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:#0e141b; --surface:#151e28; --surface-2:#1b2733; --ink:#e7eef5; --ink-soft:#b7c4d1;
+      --muted:#8598a9; --line:#253341; --line-strong:#33465a; --accent:#2dd4bf; --accent-ink:#5ee0d0;
+      --accent-contrast:#06231f; --code-bg:#0a0f15; --code-ink:#d6e2ee;
+      --d1:#e5484d; --d2:#f0883e; --d3:#e3b341; --d4:#7c93a8; --d5:#3fb950;
+    }
+  }
+  :root[data-theme="light"]{--ground:#f6f8fb;--surface:#ffffff;--surface-2:#eef2f7;--ink:#16202b;--ink-soft:#3a4a5a;--muted:#647587;--line:#dde5ee;--line-strong:#c6d2df;--accent:#0d9488;--accent-ink:#0b7d72;--accent-contrast:#ffffff;--code-bg:#0e141b;--code-ink:#d6e2ee;--d1:#d1373c;--d2:#e0742f;--d3:#c69414;--d4:#5f7488;--d5:#2f9e4a;}
+  :root[data-theme="dark"]{--ground:#0e141b;--surface:#151e28;--surface-2:#1b2733;--ink:#e7eef5;--ink-soft:#b7c4d1;--muted:#8598a9;--line:#253341;--line-strong:#33465a;--accent:#2dd4bf;--accent-ink:#5ee0d0;--accent-contrast:#06231f;--code-bg:#0a0f15;--code-ink:#d6e2ee;--d1:#e5484d;--d2:#f0883e;--d3:#e3b341;--d4:#7c93a8;--d5:#3fb950;}
+
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans); line-height:1.55; -webkit-font-smoothing:antialiased; }
+  a { color:var(--accent-ink); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .mono { font-family:var(--mono); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:5px; }
+  h1,h2,h3 { margin:0; letter-spacing:-0.01em; }
+
+  header.top { position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--ground) 85%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .top-inner { max-width:var(--maxw); margin:0 auto; padding:0 20px; height:56px; display:flex; align-items:center; gap:16px; }
+  .brand { display:flex; align-items:center; gap:9px; font-weight:700; color:var(--ink); }
+  .brand .glyph { width:24px; height:24px; border-radius:6px; border:1px solid var(--line-strong); background:radial-gradient(circle at 50% 50%, var(--accent) 0 3px, transparent 4px); flex:none; }
+  .brand .tag { font-family:var(--mono); font-size:11px; color:var(--muted); border:1px solid var(--line); padding:2px 7px; border-radius:20px; letter-spacing:0.08em; }
+  .top-right { margin-left:auto; display:flex; align-items:center; gap:14px; }
+  .top-right a { font-size:14px; color:var(--ink-soft); }
+  .theme-toggle { background:none; border:1px solid var(--line-strong); color:var(--ink-soft); width:32px; height:32px; border-radius:8px; cursor:pointer; }
+
+  .shell { max-width:var(--maxw); margin:0 auto; padding:20px; display:grid; grid-template-columns:300px 1fr; gap:18px; align-items:start; }
+  @media (max-width:940px){ .shell { grid-template-columns:1fr; } }
+
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); }
+  .panel-h { padding:12px 16px; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
+
+  /* control column */
+  .controls { position:sticky; top:72px; display:flex; flex-direction:column; gap:16px; }
+  @media (max-width:940px){ .controls { position:static; } }
+  .ctl-body { padding:16px; display:flex; flex-direction:column; gap:14px; }
+  .status-line { display:flex; align-items:center; justify-content:space-between; font-family:var(--mono); font-size:12.5px; }
+  .status-line .k { color:var(--muted); }
+  .phase-pill { font-family:var(--mono); font-size:12px; font-weight:700; padding:3px 10px; border-radius:20px; }
+  .phase-learning { color:var(--d3); background:color-mix(in srgb,var(--d3) 15%,transparent); }
+  .phase-armed { color:var(--d5); background:color-mix(in srgb,var(--d5) 16%,transparent); }
+  .phase-idle { color:var(--muted); background:var(--surface-2); }
+  .bar { height:6px; background:var(--surface-2); border-radius:20px; overflow:hidden; }
+  .bar > i { display:block; height:100%; background:var(--accent); width:0%; transition:width 0.3s linear; }
+
+  .btn { font-family:var(--mono); font-size:13px; font-weight:600; padding:9px 12px; border-radius:9px; cursor:pointer; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); text-align:left; display:flex; align-items:center; gap:9px; width:100%; }
+  .btn:hover { border-color:var(--accent); }
+  .btn:disabled { opacity:0.45; cursor:not-allowed; }
+  .btn.primary { background:var(--accent); color:var(--accent-contrast); border-color:transparent; justify-content:center; }
+  .btn.primary:hover { filter:brightness(1.06); }
+  .btn .em { margin-left:auto; font-size:10px; padding:1px 6px; border-radius:5px; }
+  .em.benign { color:var(--d5); background:color-mix(in srgb,var(--d5) 15%,transparent); }
+  .em.threat { color:var(--d1); background:color-mix(in srgb,var(--d1) 15%,transparent); }
+  .ctl-label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin:2px 0 -4px; }
+  .btn-group { display:flex; flex-direction:column; gap:7px; }
+  .wl-row { display:flex; gap:7px; }
+  .wl-row input { flex:1; font-family:var(--mono); font-size:12px; padding:8px 10px; border-radius:8px; border:1px solid var(--line-strong); background:var(--ground); color:var(--ink); min-width:0; }
+  .hint { font-size:11.5px; color:var(--muted); line-height:1.5; }
+
+  /* dashboard */
+  .board { display:flex; flex-direction:column; gap:18px; min-width:0; }
+  .top-metrics { display:grid; grid-template-columns:210px 1fr; gap:18px; }
+  @media (max-width:620px){ .top-metrics { grid-template-columns:1fr; } }
+
+  .defcon { padding:16px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .defcon .num { font-family:var(--mono); font-weight:800; font-size:58px; line-height:1; letter-spacing:-0.03em; }
+  .defcon .lab { font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); }
+  .defcon .desc { font-size:12px; color:var(--ink-soft); text-align:center; min-height:2.4em; }
+  .ladder { display:flex; gap:4px; margin-top:6px; }
+  .ladder i { width:20px; height:8px; border-radius:2px; background:var(--surface-2); }
+
+  .counters { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  @media (max-width:620px){ .counters { grid-template-columns:repeat(2,1fr); } }
+  .counter { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .counter .v { font-family:var(--mono); font-weight:700; font-size:26px; font-variant-numeric:tabular-nums; }
+  .counter .l { font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+  .counter.alert .v { color:var(--d1); }
+
+  .scan-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); margin-left:auto; opacity:0.3; }
+  .scan-dot.on { opacity:1; box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent); }
+
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th,td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  thead th { font-family:var(--mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
+  tbody tr:last-child td { border-bottom:none; }
+  .tbl-wrap { overflow-x:auto; }
+  td.cmd { font-family:var(--mono); font-size:12px; white-space:normal; min-width:180px; color:var(--ink); }
+  td.cmd .args { color:var(--muted); }
+  .chip { font-family:var(--mono); font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px; display:inline-block; }
+  .chip.learning { color:var(--d3); background:color-mix(in srgb,var(--d3) 15%,transparent); }
+  .chip.known { color:var(--d5); background:color-mix(in srgb,var(--d5) 15%,transparent); }
+  .chip.whitelisted { color:var(--accent-ink); background:color-mix(in srgb,var(--accent) 15%,transparent); }
+  .chip.suspicious { color:var(--d1); background:color-mix(in srgb,var(--d1) 15%,transparent); }
+  .sock { font-family:var(--mono); font-size:10px; color:var(--muted); }
+  .sock b { color:var(--d2); }
+  .kill { font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:7px; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-soft); cursor:pointer; }
+  .kill:hover { border-color:var(--d1); color:var(--d1); }
+  .empty { padding:22px 16px; text-align:center; color:var(--muted); font-size:13px; }
+
+  .dgrade { font-family:var(--mono); font-weight:700; display:inline-flex; align-items:center; gap:7px; }
+  .sev { width:9px; height:18px; border-radius:2px; display:inline-block; }
+  .s1{background:var(--d1);} .s2{background:var(--d2);} .s3{background:var(--d3);} .s4{background:var(--d4);} .s5{background:var(--d5);}
+
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:820px){ .cols { grid-template-columns:1fr; } }
+
+  .alerts-body, .log-body { max-height:340px; overflow-y:auto; }
+  .alert-card { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; gap:12px; }
+  .alert-card:last-child { border-bottom:none; }
+  .alert-card .bang { font-family:var(--mono); font-weight:800; font-size:13px; flex:none; width:64px; }
+  .alert-card .txt { font-size:12.5px; }
+  .alert-card .txt .cmdline { font-family:var(--mono); color:var(--ink); }
+  .alert-card .txt .why { color:var(--ink-soft); margin-top:2px; }
+  .alert-card .txt .esc { color:var(--d2); font-family:var(--mono); font-size:11px; margin-top:3px; }
+
+  .log-body { font-family:var(--mono); font-size:12px; padding:8px 0; }
+  .log-line { padding:2.5px 16px; display:flex; gap:9px; }
+  .log-line .t { color:var(--muted); flex:none; }
+  .log-line.k-learn .ev { color:var(--d3); } .log-line.k-known .ev { color:var(--d5); }
+  .log-line.k-susp .ev { color:var(--d1); } .log-line.k-term .ev { color:var(--muted); }
+  .log-line.k-wl .ev { color:var(--accent-ink); } .log-line.k-sys .ev { color:var(--muted); }
+  .log-line .ev { flex:none; width:118px; font-weight:700; }
+  .log-line .msg { color:var(--ink-soft); white-space:nowrap; }
+
+  .note { font-size:12px; color:var(--muted); padding:10px 16px; border-top:1px solid var(--line); }
+  @media (prefers-reduced-motion: reduce){ .bar>i{ transition:none; } .scan-dot.on{ box-shadow:none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="./"><span class="glyph" aria-hidden="true"></span> ProcessWatcher <span class="tag">LIVE SIM</span></a>
+    <div class="top-right">
+      <a href="./">← Back to site</a>
+      <a href="https://github.com/Cantara/ProcessWatcher">GitHub ↗</a>
+      <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">◐</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- CONTROLS -->
+  <aside class="controls">
+    <div class="panel">
+      <div class="panel-h">Console</div>
+      <div class="ctl-body">
+        <div class="status-line"><span class="k">Phase</span><span id="phasePill" class="phase-pill phase-idle">IDLE</span></div>
+        <div class="bar"><i id="learnBar"></i></div>
+        <div class="status-line"><span class="k">Baseline</span><span id="baselineCount" class="mono">0 fingerprints</span></div>
+        <button class="btn primary" id="armBtn">▶ Start &amp; fingerprint (8s)</button>
+        <div class="hint" id="phaseHint">Press start: the watcher learns everything running for 8&nbsp;seconds, then arms. Spawn processes any time.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h">Spawn a process</div>
+      <div class="ctl-body">
+        <div class="ctl-label">Benign</div>
+        <div class="btn-group">
+          <button class="btn spawn" data-key="app">app server <span class="em benign">safe</span></button>
+          <button class="btn spawn" data-key="cron">backup cron <span class="em benign">safe</span></button>
+          <button class="btn spawn" data-key="py-known">python job <span class="em benign">safe</span></button>
+        </div>
+        <div class="ctl-label">Suspicious</div>
+        <div class="btn-group">
+          <button class="btn spawn" data-key="revshell">reverse shell (nc) <span class="em threat">threat</span></button>
+          <button class="btn spawn" data-key="nmap">port scan (nmap) <span class="em threat">threat</span></button>
+          <button class="btn spawn" data-key="sniffer">sniffer (tcpdump) <span class="em threat">threat</span></button>
+          <button class="btn spawn" data-key="py-lotl">python one-liner <span class="em threat">threat</span></button>
+          <button class="btn spawn" data-key="miner">/tmp miner <span class="em threat">threat</span></button>
+        </div>
+        <div class="ctl-label">Whitelist (executable path)</div>
+        <div class="wl-row">
+          <input id="wlInput" placeholder=".*/xmrig" spellcheck="false" aria-label="Whitelist regex">
+          <button class="btn" style="width:auto" id="wlBtn">Add</button>
+        </div>
+        <div class="hint">Whitelisted paths never alert — try whitelisting the miner, then spawn it.</div>
+        <button class="btn" id="resetBtn" style="justify-content:center">↻ Reset simulation</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- DASHBOARD -->
+  <main class="board">
+    <div class="top-metrics">
+      <div class="panel defcon">
+        <div class="lab">Threat level</div>
+        <div class="num" id="defconNum" style="color:var(--d5)">5</div>
+        <div class="lab" id="defconWord" style="color:var(--d5)">DEFCON 5</div>
+        <div class="desc" id="defconDesc">Normal readiness — nothing unexpected.</div>
+        <div class="ladder" id="ladder"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="counters">
+          <div class="counter"><div class="v" id="cProc">0</div><div class="l">Processes</div></div>
+          <div class="counter"><div class="v" id="cKnown" style="color:var(--d5)">0</div><div class="l">Known</div></div>
+          <div class="counter"><div class="v" id="cWl" style="color:var(--accent-ink)">0</div><div class="l">Whitelisted</div></div>
+          <div class="counter alert"><div class="v" id="cSusp">0</div><div class="l">Suspicious</div></div>
+        </div>
+        <div class="panel" style="flex:1">
+          <div class="panel-h">Process table <span class="scan-dot" id="scanDot" title="scan cycle"></span></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>PID</th><th>User</th><th>Command</th><th>Sockets</th><th>State</th><th></th></tr></thead>
+              <tbody id="procRows"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="procEmpty">No processes yet — press start, then spawn something.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <div class="panel-h">Alerts</div>
+        <div class="alerts-body" id="alertsBody" aria-live="polite"></div>
+        <div class="empty" id="alertsEmpty">No suspicious processes detected.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-h">Event log</div>
+        <div class="log-body" id="logBody" aria-live="polite"></div>
+        <div class="note">A faithful browser simulation of ProcessWatcher's detection logic — not a real process monitor.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', function(){
+    var cur = root.getAttribute('data-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next = cur==='dark'?'light':'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('pw-theme', next); } catch(e){}
+  });
+  try { var s=localStorage.getItem('pw-theme'); if(s) root.setAttribute('data-theme', s); } catch(e){}
+
+  // ---- simulation model ----
+  var PROBE_TOOLS = ['nc','ncat','netcat','socat','nmap','masscan','tcpdump','ngrep'];
+  var SCAN_MS = 1300, LEARN_MS = 8000, ESCALATE_SCANS = 4;
+
+  var TEMPLATES = {
+    app:      { user:'app',  command:'/usr/bin/java', args:'-jar app.jar', interp:false },
+    cron:     { user:'root', command:'/usr/sbin/logrotate', args:'/etc/logrotate.conf', interp:false },
+    'py-known': { user:'app', command:'/usr/bin/python3', args:'/opt/app/worker.py', interp:true },
+    revshell: { user:'root', command:'/usr/bin/nc', args:'-lvnp 4444 -e /bin/bash', interp:false, listening:true },
+    nmap:     { user:'app',  command:'/usr/bin/nmap', args:'-sS 10.0.0.0/24', interp:false, raw:true },
+    sniffer:  { user:'root', command:'/usr/bin/tcpdump', args:'-i eth0 -w cap.pcap', interp:false, packet:true },
+    'py-lotl':{ user:'app',  command:'/usr/bin/python3', args:"-c import socket,subprocess,os", interp:true, listening:true },
+    miner:    { user:'app',  command:'/tmp/.x/xmrig', args:'--donate 0 -o pool:3333', interp:false }
+  };
+  var DESC = {1:'Probing tool running privileged — act now.',2:'Probing tool or unknown privileged process.',3:'Known command, unknown fingerprint (new user).',4:'Unknown process under a regular user.',5:'Normal readiness — nothing unexpected.'};
+
+  var state, clockTimer=null, learnStart=0, pidSeq=0;
+
+  function fresh(){
+    return { phase:'idle', procs:[], baseline:{}, knownCmds:{}, whitelist:[], scanN:0, alerts:0 };
+  }
+  function baseName(p){ var i=p.lastIndexOf('/'); return i<0?p:p.slice(i+1); }
+  function fingerprint(p){ return p.interp ? (p.user+'|'+p.command+'|'+p.command+' '+p.args) : (p.user+'|'+p.command); }
+  function isPrivileged(p){ return p.user==='root' || p.user==='0'; }
+  function isProbe(p){ return PROBE_TOOLS.indexOf(baseName(p.command))>=0; }
+  function isWhitelisted(p){ for(var i=0;i<state.whitelist.length;i++){ try{ if(new RegExp('^'+state.whitelist[i]+'$').test(p.command)) return true; }catch(e){} } return false; }
+
+  function classify(p){
+    var priv=isPrivileged(p), probe=isProbe(p), base;
+    if(probe&&priv) base=1; else if(probe||priv) base=2; else if(state.knownCmds[p.command]) base=3; else base=4;
+    var esc=0; if(p.listening) esc++; if(p.raw||p.packet) esc++;
+    var lvl=Math.max(1, base-esc);
+    return { level:lvl, base:base, escalated: lvl!==base, ports: p.listening?[4444]:[] };
+  }
+
+  // ---- rendering ----
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+
+  function log(kind, ev, msg){
+    var d=new Date(learnStart? (Date.now()) : Date.now());
+    var hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
+    var el=document.createElement('div'); el.className='log-line k-'+kind;
+    el.innerHTML='<span class="t">'+hh+':'+mm+':'+ss+'</span><span class="ev">'+esc(ev)+'</span><span class="msg">'+msg+'</span>';
+    var body=$('logBody'); body.insertBefore(el, body.firstChild);
+    while(body.children.length>80) body.removeChild(body.lastChild);
+  }
+
+  function cmdHtml(p){ return '<span>'+esc(p.command)+'</span> <span class="args">'+esc(p.args)+'</span>'; }
+
+  function render(){
+    // counters
+    var known=0,wl=0,susp=0;
+    state.procs.forEach(function(p){ if(p.state==='known')known++; else if(p.state==='whitelisted')wl++; else if(p.state==='suspicious')susp++; });
+    $('cProc').textContent=state.procs.length; $('cKnown').textContent=known; $('cWl').textContent=wl; $('cSusp').textContent=susp;
+    $('baselineCount').textContent=Object.keys(state.baseline).length+' fingerprints';
+
+    // process table
+    var rows=$('procRows'); rows.innerHTML='';
+    state.procs.forEach(function(p){
+      var tr=document.createElement('tr');
+      var socks=[]; if(p.listening)socks.push('<b>LISTEN</b>'); if(p.raw)socks.push('<b>RAW</b>'); if(p.packet)socks.push('<b>PACKET</b>');
+      tr.innerHTML='<td class="mono">'+p.pid+'</td><td class="mono">'+esc(p.user)+'</td>'+
+        '<td class="cmd">'+cmdHtml(p)+'</td>'+
+        '<td class="sock">'+(socks.join(' ')||'—')+'</td>'+
+        '<td><span class="chip '+p.state+'">'+p.state.toUpperCase()+(p.state==='suspicious'?' · D'+p.defcon.level:'')+'</span></td>'+
+        '<td><button class="kill" data-pid="'+p.pid+'">kill</button></td>';
+      rows.appendChild(tr);
+    });
+    $('procEmpty').style.display = state.procs.length? 'none':'block';
+
+    // defcon meter = worst active suspicious
+    var worst=5;
+    state.procs.forEach(function(p){ if(p.state==='suspicious' && p.defcon.level<worst) worst=p.defcon.level; });
+    var col=getComputedStyle(root).getPropertyValue('--d'+worst);
+    $('defconNum').textContent=worst; $('defconNum').style.color=col;
+    $('defconWord').textContent='DEFCON '+worst; $('defconWord').style.color=col;
+    $('defconDesc').textContent=DESC[worst];
+    var lad=$('ladder'); lad.innerHTML='';
+    for(var i=1;i<=5;i++){ var b=document.createElement('i'); if(i>=worst && worst<5) b.style.background=getComputedStyle(root).getPropertyValue('--d'+i); if(worst===5&&i===5)b.style.background=getComputedStyle(root).getPropertyValue('--d5'); lad.appendChild(b); }
+
+    $('alertsEmpty').style.display = $('alertsBody').children.length? 'none':'block';
+  }
+
+  function pushAlert(p){
+    var d=p.defcon;
+    var reasons=[];
+    if(isProbe(p)) reasons.push('known probing tool');
+    if(isPrivileged(p)) reasons.push('running privileged');
+    if(p.listening) reasons.push('listening on :'+ (d.ports[0]||'?'));
+    if(p.raw) reasons.push('holds a raw socket');
+    if(p.packet) reasons.push('packet capture socket');
+    if(!reasons.length) reasons.push('unknown fingerprint');
+    var card=document.createElement('div'); card.className='alert-card';
+    card.innerHTML='<div class="bang"><span class="dgrade"><span class="sev s'+d.level+'"></span>D'+d.level+'</span></div>'+
+      '<div class="txt"><div class="cmdline">'+esc(p.command+' '+p.args)+'</div>'+
+      '<div class="why">'+esc(p.user)+' · '+reasons.join(' · ')+'</div>'+
+      (d.escalated?'<div class="esc">↑ escalated from DEFCON'+d.base+'</div>':'')+'</div>';
+    var body=$('alertsBody'); body.insertBefore(card, body.firstChild);
+  }
+
+  function qualify(p){
+    if(isWhitelisted(p)){ p.state='whitelisted'; log('wl','WHITELISTED', cmdHtml(p)); return; }
+    if(state.phase==='learning'){ p.state='learning'; state.baseline[fingerprint(p)]=true; if(p.command) state.knownCmds[p.command]=true; log('learn','LEARN', cmdHtml(p)); return; }
+    if(state.baseline[fingerprint(p)]){ p.state='known'; log('known','KNOWN', cmdHtml(p)); return; }
+    p.state='suspicious'; p.defcon=classify(p); p.aliveScans=0; state.alerts++;
+    log('susp','SUSPICIOUS', '<span style="color:var(--d'+p.defcon.level+')">DEFCON '+p.defcon.level+'</span> · '+cmdHtml(p));
+    pushAlert(p);
+  }
+
+  function spawn(key){
+    if(state.phase==='idle'){ armCountdown(); }
+    var t=TEMPLATES[key]; if(!t) return;
+    var p={ pid: 1000+(++pidSeq), user:t.user, command:t.command, args:t.args, interp:!!t.interp,
+            listening:!!t.listening, raw:!!t.raw, packet:!!t.packet, state:'', defcon:null };
+    state.procs.unshift(p);
+    qualify(p);
+    render();
+  }
+
+  function killProc(pid){
+    var i=state.procs.findIndex(function(p){ return p.pid===pid; });
+    if(i<0) return; var p=state.procs[i];
+    state.procs.splice(i,1);
+    log('term','TERMINATED', cmdHtml(p));
+    render();
+  }
+
+  function seedBaseline(){
+    [['systemd','root','/usr/lib/systemd/systemd',''],['sshd','root','/usr/sbin/sshd','-D'],
+     ['java','app','/usr/bin/java','-jar app.jar'],['python3','app','/usr/bin/python3','/opt/app/worker.py'],
+     ['nginx','www','/usr/sbin/nginx','-g daemon off']].forEach(function(r){
+      var p={pid:1000+(++pidSeq),user:r[1],command:r[2],args:r[3],interp:baseName(r[2]).indexOf('python')===0,listening:false,raw:false,packet:false,state:'learning',defcon:null};
+      state.baseline[fingerprint(p)]=true; state.knownCmds[p.command]=true; state.procs.push(p);
+    });
+    log('sys','SYSTEM', 'fingerprinting period started — learning baseline');
+  }
+
+  function setPhase(ph){
+    state.phase=ph;
+    var pill=$('phasePill');
+    pill.className='phase-pill phase-'+(ph==='learning'?'learning':ph==='armed'?'armed':'idle');
+    pill.textContent = ph==='learning'?'LEARNING':ph==='armed'?'ARMED':'IDLE';
+    document.querySelectorAll('.spawn').forEach(function(b){ b.disabled=false; });
+  }
+
+  function armCountdown(){
+    if(state.phase!=='idle') return;
+    setPhase('learning'); learnStart=Date.now();
+    seedBaseline();
+    render();
+    if(clockTimer) clearInterval(clockTimer);
+    clockTimer=setInterval(tick, SCAN_MS);
+    $('armBtn').textContent='● Running';
+  }
+
+  function tick(){
+    // scan pulse
+    var dot=$('scanDot'); dot.classList.add('on'); setTimeout(function(){ dot.classList.remove('on'); }, 320);
+    state.scanN++;
+
+    // learning window progress
+    if(state.phase==='learning'){
+      var el=Date.now()-learnStart, pct=Math.min(100, el/LEARN_MS*100);
+      $('learnBar').style.width=pct+'%';
+      $('phaseHint').textContent='Learning… '+Math.max(0,Math.ceil((LEARN_MS-el)/1000))+'s left. Anything spawned now is learned as normal.';
+      if(el>=LEARN_MS){ setPhase('armed'); $('learnBar').style.width='100%';
+        $('phaseHint').textContent='Armed. Unknown, non-whitelisted processes now raise DEFCON alerts.';
+        log('sys','SYSTEM', 'fingerprinting complete — '+Object.keys(state.baseline).length+' fingerprints, now armed'); }
+    }
+
+    // long-lived escalation
+    if(state.phase==='armed'){
+      state.procs.forEach(function(p){
+        if(p.state==='suspicious' && p.defcon.level>1){
+          p.aliveScans=(p.aliveScans||0)+1;
+          if(p.aliveScans===ESCALATE_SCANS){
+            var from=p.defcon.level; p.defcon.level=Math.max(1,from-1); p.defcon.escalated=true; p.defcon.base=from;
+            log('susp','ESCALATED', 'still alive → <span style="color:var(--d'+p.defcon.level+')">DEFCON '+p.defcon.level+'</span> · '+cmdHtml(p));
+            pushAlert(p);
+          }
+        }
+      });
+    }
+    render();
+  }
+
+  function reset(){
+    if(clockTimer){ clearInterval(clockTimer); clockTimer=null; }
+    state=fresh(); pidSeq=0; learnStart=0;
+    $('logBody').innerHTML=''; $('alertsBody').innerHTML='';
+    $('learnBar').style.width='0%'; $('armBtn').textContent='▶ Start & fingerprint (8s)';
+    $('phaseHint').textContent='Press start: the watcher learns everything running for 8 seconds, then arms. Spawn processes any time.';
+    setPhase('idle'); render();
+  }
+
+  // ---- wiring ----
+  document.querySelectorAll('.spawn').forEach(function(b){ b.addEventListener('click', function(){ spawn(b.getAttribute('data-key')); }); });
+  $('armBtn').addEventListener('click', armCountdown);
+  $('resetBtn').addEventListener('click', reset);
+  $('procRows').addEventListener('click', function(e){ var k=e.target.closest('.kill'); if(k) killProc(parseInt(k.getAttribute('data-pid'),10)); });
+  $('wlBtn').addEventListener('click', function(){ var v=$('wlInput').value.trim(); if(!v) return; state.whitelist.push(v); log('wl','WHITELIST +', esc(v)); $('wlInput').value=''; });
+  $('wlInput').addEventListener('keydown', function(e){ if(e.key==='Enter') $('wlBtn').click(); });
+
+  reset();
+})();
+</script>
+</body>
+</html>
