@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,11 +50,22 @@ public class FingerprintStore {
     private static final String FINGERPRINT_LINE_PREFIX = "F\t";
     private static final String COMMAND_LINE_PREFIX = "C\t";
 
+    /**
+     * Interpreter/shell executables (base names, version suffixes normalized away) whose
+     * fingerprint includes the command line, so that a trusted interpreter running an unseen
+     * script or arguments is not mistaken for a known process (living-off-the-land).
+     */
+    private static final Set<String> DEFAULT_INTERPRETERS = new HashSet<>(Arrays.asList(
+            "bash", "sh", "dash", "zsh", "ash", "ksh", "csh", "tcsh", "fish",
+            "python", "perl", "ruby", "node", "php", "lua", "tclsh", "pwsh", "powershell"
+    ));
+
     private final long fingerprintingPeriodMs;
     private final long learningStartedAt;
     private final Set<String> fingerprints = ConcurrentHashMap.newKeySet();
     private final Set<String> knownCommands = ConcurrentHashMap.newKeySet();
     private final Set<Pattern> whitelist = ConcurrentHashMap.newKeySet();
+    private final Set<String> interpreters = ConcurrentHashMap.newKeySet();
 
     private volatile Path baselineFile;
     private final AtomicBoolean baselineSaved = new AtomicBoolean(false);
@@ -60,6 +73,7 @@ public class FingerprintStore {
     public FingerprintStore(long fingerprintingPeriodMs) {
         this.fingerprintingPeriodMs = fingerprintingPeriodMs;
         this.learningStartedAt = System.currentTimeMillis();
+        this.interpreters.addAll(DEFAULT_INTERPRETERS);
     }
 
     /**
@@ -73,14 +87,52 @@ public class FingerprintStore {
     }
 
     public void learn(ProcessDTO process) {
-        fingerprints.add(process.getFingerprint());
+        fingerprints.add(fingerprintOf(process));
         if (!process.getCommand().isEmpty()) {
             knownCommands.add(process.getCommand());
         }
     }
 
     public boolean isKnown(ProcessDTO process) {
-        return fingerprints.contains(process.getFingerprint());
+        return fingerprints.contains(fingerprintOf(process));
+    }
+
+    /**
+     * The effective baseline identity of a process: {@code user|command} normally, but
+     * {@code user|command|commandLine} for interpreters and shells so that a trusted
+     * interpreter running an unseen script or arguments does not match the baseline.
+     */
+    public String fingerprintOf(ProcessDTO process) {
+        String base = process.getFingerprint();
+        if (isInterpreter(process.getCommand())) {
+            return base + "|" + process.getCommandLine();
+        }
+        return base;
+    }
+
+    /**
+     * Register an additional interpreter/shell by executable base name (e.g. "elixir").
+     * @param interpreterBaseName the executable base name, without path or version suffix
+     */
+    public void addInterpreter(String interpreterBaseName) {
+        interpreters.add(interpreterBaseName);
+    }
+
+    /**
+     * @param command an executable path (or base name)
+     * @return true if the executable is a known interpreter/shell
+     */
+    public boolean isInterpreter(String command) {
+        if (command == null || command.isEmpty()) {
+            return false;
+        }
+        String baseName = command.substring(command.lastIndexOf('/') + 1);
+        if (interpreters.contains(baseName)) {
+            return true;
+        }
+        // normalize version suffixes: python3, python3.11, perl5.36 -> python, perl
+        String normalized = baseName.replaceAll("[0-9.]+$", "");
+        return !normalized.equals(baseName) && interpreters.contains(normalized);
     }
 
     public boolean isKnownCommand(String command) {

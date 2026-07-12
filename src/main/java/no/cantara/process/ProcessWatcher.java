@@ -75,6 +75,8 @@ public class ProcessWatcher {
 
     private final Set<String> whitelistPatterns = Sets.newConcurrentHashSet();
 
+    private final Set<String> extraInterpreters = Sets.newConcurrentHashSet();
+
     private Path fingerprintBaselineFile;
 
     private EventWorker eventWorker;
@@ -217,7 +219,23 @@ public class ProcessWatcher {
         for (String pattern : whitelistPatterns) {
             store.addWhitelistPattern(pattern);
         }
+        for (String interpreter : extraInterpreters) {
+            store.addInterpreter(interpreter);
+        }
         return store;
+    }
+
+    /**
+     * Register an additional interpreter/shell executable (base name) beyond the built-in
+     * defaults. Interpreter processes are fingerprinted on their full command line, so a
+     * trusted interpreter running an unseen script is not mistaken for a known process.
+     * @param interpreterBaseName the executable base name, e.g. "elixir"
+     */
+    public void addInterpreter(String interpreterBaseName) {
+        extraInterpreters.add(interpreterBaseName);
+        if (fingerprintStore != null) {
+            fingerprintStore.addInterpreter(interpreterBaseName);
+        }
     }
 
     /**
