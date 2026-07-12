@@ -34,11 +34,15 @@ mapping: probing tools (nc, nmap, socat, ...) running privileged map to DEFCON1,
 privileged processes or probing tools to DEFCON2, known commands under new users to DEFCON3
 and other unknown processes to DEFCON4.
 
-Two escalation heuristics raise a grading one level:
+Three escalation heuristics raise a grading (each one level, floored at DEFCON1):
 
 * **Listening probes**: on Linux, a suspicious process holding a listening TCP socket
   (detected through `/proc/net/tcp` and `/proc/<pid>/fd`) is escalated immediately, and the
   event exposes the ports through `DefconEvent.getListeningPorts()`.
+* **Scanners and sniffers**: a suspicious process holding a raw IP socket (`/proc/net/raw`)
+  or an AF_PACKET capture socket (`/proc/net/packet`) - the footprint of packet sniffers,
+  custom port scanners and covert channels - is escalated immediately
+  (`DefconEvent.hasRawSocket()` / `hasPacketSocket()`).
 * **Long-lived intruders**: a suspicious process still alive after the configured escalation
   delay is re-reported with an escalated grading (`DefconEvent.isEscalated()`).
 

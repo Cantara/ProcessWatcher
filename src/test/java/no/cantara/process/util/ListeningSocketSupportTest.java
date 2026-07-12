@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class ListeningSocketSupportTest {
@@ -35,6 +36,30 @@ public class ListeningSocketSupportTest {
         ListeningSocketSupport.parseListeningSocketLine(
                 "   1: 0100007F:1F90 0100007F:C350 01 00000000:00000000 00:00000000 00000000     0        0 424243 1 0000000000000000 100 0 0 10 0", inodeToPort);
         assertEquals(inodeToPort.size(), 1);
+    }
+
+    @Test
+    public void testDetectRawAndPacketSockets() throws Exception {
+        Process socketHolder = SocketHolderHelper.spawnSocketHolder();
+        if (socketHolder == null) {
+            log.info("Skipping raw/packet socket test - helper unavailable on {}", FileSystemSupport.getOSString());
+            return;
+        }
+        try {
+            long helperPid = socketHolder.pid();
+            assertTrue(ListeningSocketSupport.hasRawSocket(helperPid),
+                    "Expected the helper to be detected holding a raw IP socket");
+            assertTrue(ListeningSocketSupport.hasPacketSocket(helperPid),
+                    "Expected the helper to be detected holding an AF_PACKET socket");
+
+            long ownPid = ProcessHandle.current().pid();
+            assertFalse(ListeningSocketSupport.hasRawSocket(ownPid),
+                    "The test JVM should not hold a raw IP socket");
+            assertFalse(ListeningSocketSupport.hasPacketSocket(ownPid),
+                    "The test JVM should not hold an AF_PACKET socket");
+        } finally {
+            socketHolder.destroy();
+        }
     }
 
     @Test

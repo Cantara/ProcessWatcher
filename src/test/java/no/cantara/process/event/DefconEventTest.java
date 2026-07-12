@@ -5,6 +5,7 @@ import no.cantara.process.util.FileSystemSupport;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class DefconEventTest {
@@ -53,6 +54,32 @@ public class DefconEventTest {
         DefconEvent defcon1 = DefconEvent.escalate(DefconEvent.escalate(escalated));
         assertEquals(defcon1.getLevel(), 1);
         assertEquals(DefconEvent.escalate(defcon1).getLevel(), 1);
+    }
+
+    @Test
+    public void testSniffingListeningProcessIsEscalatedTwice() throws Exception {
+        Process socketHolder = no.cantara.process.util.SocketHolderHelper.spawnSocketHolder();
+        if (socketHolder == null) {
+            return;
+        }
+        try {
+            FingerprintStore store = new FingerprintStore(0);
+
+            // grade the helper (raw + AF_PACKET + listening TCP socket) as an unknown regular-user process
+            ProcessDTO sniffer = process("app", "/opt/strange/daemon");
+            sniffer.setPid(socketHolder.pid());
+
+            DefconEvent graded = DefconEvent.classify(sniffer, store);
+            assertEquals(graded.getLevel(), 2,
+                    "Listening (+1) and raw/packet sockets (+1) should escalate DEFCON4 to DEFCON2");
+            assertTrue(graded.isEscalated());
+            assertEquals(graded.getEscalatedFromLevel(), 4);
+            assertTrue(graded.hasRawSocket());
+            assertTrue(graded.hasPacketSocket());
+            assertFalse(graded.getListeningPorts().isEmpty());
+        } finally {
+            socketHolder.destroy();
+        }
     }
 
     @Test
