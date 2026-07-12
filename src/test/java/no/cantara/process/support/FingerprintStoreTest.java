@@ -144,13 +144,25 @@ public class FingerprintStoreTest {
     }
 
     @Test
-    public void testWhitelist() {
+    public void testWhitelistMatchesCommandOnlyByDefault() {
         FingerprintStore store = new FingerprintStore(0);
         store.addWhitelistPattern(".*logrotate.*");
 
+        // matches the executable path
         assertTrue(store.isWhitelisted(process("root", "/usr/sbin/logrotate", "/usr/sbin/logrotate /etc/logrotate.conf")));
-        assertTrue(store.isWhitelisted(process("root", "/bin/sh", "/bin/sh -c /usr/sbin/logrotate")));
+        // a spoofed command line must NOT slip through a command (executable path) pattern
+        assertFalse(store.isWhitelisted(process("root", "/bin/sh", "/bin/sh -c /usr/sbin/logrotate")),
+                "Default whitelist must match the executable path only, not the spoofable command line");
         assertFalse(store.isWhitelisted(process("root", "/usr/bin/nc", "/usr/bin/nc -l 4444")));
+    }
+
+    @Test
+    public void testCommandLineWhitelistIsOptIn() {
+        FingerprintStore store = new FingerprintStore(0);
+        store.addCommandLineWhitelistPattern(".*--processwatcher-allow.*");
+
+        assertTrue(store.isWhitelisted(process("app", "/usr/bin/java", "/usr/bin/java -jar app.jar --processwatcher-allow")));
+        assertFalse(store.isWhitelisted(process("app", "/usr/bin/java", "/usr/bin/java -jar app.jar")));
     }
 
 }
