@@ -19,6 +19,9 @@ import no.cantara.process.worker.ProcessProducerWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 
 /**
@@ -55,6 +58,12 @@ public class ProcessWatcher {
      */
     public static long FINGERPRINTING_PERIOD = 20 * 60 * 1000;
 
+    /**
+     * A suspicious process that is still alive this many milliseconds after detection is
+     * re-reported with a one-level escalated DEFCON grading. -1 disables escalation.
+     */
+    public static long SUSPICIOUS_ESCALATION_DELAY = 60 * 1000;
+
     public static long WORKER_SHUTDOWN_TIMEOUT = 150; // used in force shutdownNow hook
 
     private final EventBus processEventBus;
@@ -64,6 +73,8 @@ public class ProcessWatcher {
     private FingerprintStore fingerprintStore;
 
     private final Set<String> whitelistPatterns = Sets.newConcurrentHashSet();
+
+    private Path fingerprintBaselineFile;
 
     private EventWorker eventWorker;
 
@@ -189,11 +200,33 @@ public class ProcessWatcher {
     }
 
     private FingerprintStore createFingerprintStore() {
-        FingerprintStore store = new FingerprintStore(FINGERPRINTING_PERIOD);
+        FingerprintStore store = null;
+        if (fingerprintBaselineFile != null && Files.exists(fingerprintBaselineFile)) {
+            try {
+                store = FingerprintStore.loadBaseline(fingerprintBaselineFile);
+            } catch (IOException e) {
+                log.error("Unable to load fingerprint baseline from {} - starting a new learning period",
+                        fingerprintBaselineFile, e);
+            }
+        }
+        if (store == null) {
+            store = new FingerprintStore(FINGERPRINTING_PERIOD);
+            store.setBaselineFile(fingerprintBaselineFile);
+        }
         for (String pattern : whitelistPatterns) {
             store.addWhitelistPattern(pattern);
         }
         return store;
+    }
+
+    /**
+     * Configure a file the learned baseline is persisted to when the fingerprinting period
+     * ends. When the file already exists at start(), the baseline is restored from it and
+     * no new learning period is needed - a restarted application is immediately armed.
+     * @param fingerprintBaselineFile the baseline file
+     */
+    public void setFingerprintBaselineFile(Path fingerprintBaselineFile) {
+        this.fingerprintBaselineFile = fingerprintBaselineFile;
     }
 
     public void setProcessScanInterval(long scanInterval) {
@@ -202,6 +235,10 @@ public class ProcessWatcher {
 
     public void setFingerprintingPeriod(long fingerprintingPeriod) {
         FINGERPRINTING_PERIOD = fingerprintingPeriod;
+    }
+
+    public void setSuspiciousEscalationDelay(long suspiciousEscalationDelay) {
+        SUSPICIOUS_ESCALATION_DELAY = suspiciousEscalationDelay;
     }
 
     public void setWorkerShutdownTimeout(long workerShutdownTimeout) {
@@ -248,6 +285,8 @@ public class ProcessWatcher {
         json.addProperty("scanProcessInterval", SCAN_PROCESS_INTERVAL);
         json.addProperty("fingerprintingPeriod", FINGERPRINTING_PERIOD);
         json.addProperty("whitelist", whitelistPatterns.toString());
+        json.addProperty("suspiciousEscalationDelay", SUSPICIOUS_ESCALATION_DELAY);
+        json.addProperty("fingerprintBaselineFile", String.valueOf(fingerprintBaselineFile));
         json.addProperty("workerShutdownTimeout", WORKER_SHUTDOWN_TIMEOUT);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -277,10 +316,14 @@ public class ProcessWatcher {
             processProducerWorker.shutdown();
             processConsumerWorker.shutdown();
             eventWorker.shutdown();
+            if (fingerprintStore != null) {
+                fingerprintStore.saveBaselineOnce();
+            }
             startedHandler.clear();
             terminatedHandler.clear();
             suspiciousHandler.clear();
             whitelistPatterns.clear();
+            fingerprintBaselineFile = null;
             getProcessWorkerMap().clear();
             processWorkerMap = null;
             fingerprintStore = null;

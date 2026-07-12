@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class ProcessConsumerWorker {
@@ -16,17 +17,20 @@ public class ProcessConsumerWorker {
 
     private final ExecutorService worker;
 
+    private final ScheduledExecutorService escalationScheduler;
+
     private final BlockingQueue<ProcessWatchEvent> queue;
 
     public ProcessConsumerWorker(BlockingQueue<ProcessWatchEvent> queue) {
         this.worker = Executors.newCachedThreadPool();
+        this.escalationScheduler = Executors.newSingleThreadScheduledExecutor();
         this.queue = queue;
     }
 
     public void start() {
         try {
             log.debug("[start] worker thread");
-            worker.execute(new ProcessEventsConsumer(queue));
+            worker.execute(new ProcessEventsConsumer(queue, escalationScheduler));
             log.debug("[end] dispatched events.");
         } catch (Exception e) {
             log.error("event failed.", e);
@@ -43,6 +47,7 @@ public class ProcessConsumerWorker {
 
     public void shutdown() {
         worker.shutdown();
+        escalationScheduler.shutdownNow();
         try {
             if (!worker.awaitTermination(ProcessWatcher.WORKER_SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS)) {
                 worker.shutdownNow();

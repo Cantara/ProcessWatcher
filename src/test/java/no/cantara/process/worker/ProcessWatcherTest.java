@@ -141,6 +141,96 @@ public class ProcessWatcherTest {
     }
 
     @Test(dependsOnMethods = "testWhitelistedProcessIsNotSuspicious")
+    public void testLongLivedSuspiciousProcessIsEscalated() throws Exception {
+        Path canary = createCanaryBinary("pw-canary-escalation");
+
+        ProcessWatcher pw = ProcessWatcher.getInstance();
+        pw.setProcessScanInterval(200);
+        pw.setFingerprintingPeriod(500);
+        pw.setSuspiciousEscalationDelay(800);
+
+        CountDownLatch escalationLatch = new CountDownLatch(2);
+        ConcurrentLinkedQueue<ProcessWatchEvent> suspiciousEvents = new ConcurrentLinkedQueue<>();
+
+        pw.registerSuspiciousProcessHandler(event -> {
+            if (event.getProcess().getCommand().contains("pw-canary-escalation")) {
+                suspiciousEvents.add(event);
+                escalationLatch.countDown();
+            }
+        });
+
+        pw.start();
+        Thread.sleep(1200);
+
+        Process canaryProcess = new ProcessBuilder(canary.toString(), "15").start();
+        try {
+            assertTrue(escalationLatch.await(20, TimeUnit.SECONDS),
+                    "Expected both the initial and the escalated suspicious event");
+
+            ProcessWatchEvent[] events = suspiciousEvents.toArray(new ProcessWatchEvent[0]);
+            assertFalse(events[0].getDefconEvent().isEscalated(), "First grading must not be escalated");
+            assertTrue(events[1].getDefconEvent().isEscalated(), "Second grading must be escalated");
+            assertEquals(events[1].getDefconEvent().getLevel(), events[0].getDefconEvent().getLevel() - 1,
+                    "Escalation must raise the threat exactly one level");
+            log.info("Canary was escalated: {} -> {}", events[0].getDefconEvent(), events[1].getDefconEvent());
+        } finally {
+            canaryProcess.destroy();
+        }
+
+        pw.stop();
+        pw.setSuspiciousEscalationDelay(60 * 1000);
+    }
+
+    @Test(dependsOnMethods = "testLongLivedSuspiciousProcessIsEscalated")
+    public void testBaselineFileMakesRestartedWatcherArmed() throws Exception {
+        Path canary = createCanaryBinary("pw-canary-baseline");
+        Path baselineFile = Paths.get("target", "pw-baseline-integration.txt").toAbsolutePath();
+        Files.deleteIfExists(baselineFile);
+
+        // simulate a completed earlier run: a baseline containing only the canary fingerprint
+        String user = System.getProperty("user.name");
+        Files.write(baselineFile, java.util.Arrays.asList("F\t" + user + "|" + canary, "C\t" + canary));
+
+        ProcessWatcher pw = ProcessWatcher.getInstance();
+        pw.setProcessScanInterval(200);
+        pw.setFingerprintingPeriod(60 * 1000); // must be ignored when the baseline is restored
+        pw.setSuspiciousEscalationDelay(-1);
+        pw.setFingerprintBaselineFile(baselineFile);
+
+        CountDownLatch knownLatch = new CountDownLatch(1);
+        ConcurrentLinkedQueue<ProcessWatchEvent> suspiciousCanaryEvents = new ConcurrentLinkedQueue<>();
+
+        pw.registerProcessStartedHandler(event -> {
+            if (event.getProcess().getCommand().contains("pw-canary-baseline")
+                    && ProcessWatchState.KNOWN.equals(event.getProcessWatchState())) {
+                knownLatch.countDown();
+            }
+        });
+        pw.registerSuspiciousProcessHandler(event -> {
+            if (event.getProcess().getCommand().contains("pw-canary-baseline")) {
+                suspiciousCanaryEvents.add(event);
+            }
+        });
+
+        pw.start();
+        assertFalse(pw.getFingerprintStore().isLearning(),
+                "A watcher started with an existing baseline file must be armed immediately");
+
+        Process canaryProcess = new ProcessBuilder(canary.toString(), "5").start();
+        try {
+            assertTrue(knownLatch.await(20, TimeUnit.SECONDS),
+                    "Expected the canary to be KNOWN through the restored baseline");
+            assertTrue(suspiciousCanaryEvents.isEmpty(),
+                    "A baselined process must not produce suspicious events: " + suspiciousCanaryEvents);
+        } finally {
+            canaryProcess.destroy();
+        }
+
+        pw.stop();
+        pw.setSuspiciousEscalationDelay(60 * 1000);
+    }
+
+    @Test(dependsOnMethods = "testBaselineFileMakesRestartedWatcherArmed")
     public void testPollEventsScannerMode() throws Exception {
         if (!FileSystemSupport.isLinux() && !FileSystemSupport.isMacOS()) {
             log.info("Skipping ps based scanner test on {}", FileSystemSupport.getOSString());
