@@ -36,6 +36,10 @@ public abstract class DefconEvent {
 
     private List<Integer> listeningPorts = Collections.emptyList();
 
+    private boolean rawSocket;
+
+    private boolean packetSocket;
+
     private int escalatedFromLevel;
 
     protected DefconEvent(ProcessDTO process) {
@@ -68,6 +72,22 @@ public abstract class DefconEvent {
     }
 
     /**
+     * @return true if the suspicious process held a raw IP socket when graded
+     * (custom scanners, covert channels)
+     */
+    public boolean hasRawSocket() {
+        return rawSocket;
+    }
+
+    /**
+     * @return true if the suspicious process held an AF_PACKET (packet capture) socket
+     * when graded (sniffers such as tcpdump and libpcap based tools)
+     */
+    public boolean hasPacketSocket() {
+        return packetSocket;
+    }
+
+    /**
      * @return true if this grading was escalated from a previous grading, either because
      * the process holds a listening socket or because it remained alive (see
      * {@link #escalate(DefconEvent)})
@@ -92,33 +112,45 @@ public abstract class DefconEvent {
      * <li>DEFCON3 - known command but unknown fingerprint (same executable, new user)</li>
      * <li>DEFCON4 - unknown process under a regular user</li>
      * </ul>
-     * A process holding a listening TCP socket (the "listening probe" use-case) is
-     * escalated one level.
+     * Two socket signals each escalate the grading one level (floored at DEFCON1):
+     * a listening TCP socket (the "listening probe" use-case), and a raw IP or
+     * AF_PACKET capture socket (scanners and sniffers).
      */
     public static DefconEvent classify(ProcessDTO process, FingerprintStore store) {
         boolean privileged = PRIVILEGED_USERS.contains(process.getUser());
         boolean probeTool = isProbeTool(process);
 
-        int level;
+        int baseLevel;
         if (probeTool && privileged) {
-            level = 1;
+            baseLevel = 1;
         } else if (probeTool || privileged) {
-            level = 2;
+            baseLevel = 2;
         } else if (store.isKnownCommand(process.getCommand())) {
-            level = 3;
+            baseLevel = 3;
         } else {
-            level = 4;
+            baseLevel = 4;
         }
 
         List<Integer> listeningPorts = ListeningSocketSupport.listeningPortsOf(process.getPid());
-        DefconEvent defconEvent;
-        if (!listeningPorts.isEmpty() && level > 1) {
-            defconEvent = forLevel(level - 1, process);
-            defconEvent.setEscalatedFromLevel(level);
-        } else {
-            defconEvent = forLevel(level, process);
+        boolean rawSocket = ListeningSocketSupport.hasRawSocket(process.getPid());
+        boolean packetSocket = ListeningSocketSupport.hasPacketSocket(process.getPid());
+
+        int escalations = 0;
+        if (!listeningPorts.isEmpty()) {
+            escalations++;
+        }
+        if (rawSocket || packetSocket) {
+            escalations++;
+        }
+
+        int level = Math.max(1, baseLevel - escalations);
+        DefconEvent defconEvent = forLevel(level, process);
+        if (level != baseLevel) {
+            defconEvent.setEscalatedFromLevel(baseLevel);
         }
         defconEvent.setListeningPorts(listeningPorts);
+        defconEvent.rawSocket = rawSocket;
+        defconEvent.packetSocket = packetSocket;
         return defconEvent;
     }
 
@@ -130,6 +162,8 @@ public abstract class DefconEvent {
         DefconEvent escalated = forLevel(Math.max(1, original.getLevel() - 1), original.getSuspiciousProcess());
         escalated.setEscalatedFromLevel(original.getLevel());
         escalated.setListeningPorts(new ArrayList<>(original.getListeningPorts()));
+        escalated.rawSocket = original.rawSocket;
+        escalated.packetSocket = original.packetSocket;
         return escalated;
     }
 
@@ -162,6 +196,12 @@ public abstract class DefconEvent {
         buf.append("DEFCON").append(getLevel()).append(" - ").append(getInformation());
         if (!listeningPorts.isEmpty()) {
             buf.append(" (listening on TCP ports ").append(listeningPorts).append(")");
+        }
+        if (rawSocket) {
+            buf.append(" (holding a raw IP socket)");
+        }
+        if (packetSocket) {
+            buf.append(" (holding an AF_PACKET capture socket)");
         }
         if (isEscalated()) {
             buf.append(" (escalated from DEFCON").append(escalatedFromLevel).append(")");
