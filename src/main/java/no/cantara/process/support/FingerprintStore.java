@@ -65,6 +65,7 @@ public class FingerprintStore {
     private final Set<String> fingerprints = ConcurrentHashMap.newKeySet();
     private final Set<String> knownCommands = ConcurrentHashMap.newKeySet();
     private final Set<Pattern> whitelist = ConcurrentHashMap.newKeySet();
+    private final Set<Pattern> commandLineWhitelist = ConcurrentHashMap.newKeySet();
     private final Set<String> interpreters = ConcurrentHashMap.newKeySet();
 
     private volatile Path baselineFile;
@@ -140,16 +141,33 @@ public class FingerprintStore {
     }
 
     /**
-     * @param regex pattern matched against both the command and the full command line
+     * Whitelist processes whose executable path ({@link ProcessDTO#getCommand()}) matches the
+     * pattern. Matching the executable path is spoof-resistant: unlike the command line, a
+     * process cannot freely rewrite the path it was executed from.
+     * @param regex pattern matched against the command (executable path)
      */
     public void addWhitelistPattern(String regex) {
         whitelist.add(Pattern.compile(regex));
     }
 
+    /**
+     * Whitelist processes whose full command line matches the pattern. Opt-in, because a
+     * process can set its own argv - an attacker can craft a command line to match a lax
+     * command-line whitelist. Prefer {@link #addWhitelistPattern(String)} where possible.
+     * @param regex pattern matched against the full command line
+     */
+    public void addCommandLineWhitelistPattern(String regex) {
+        commandLineWhitelist.add(Pattern.compile(regex));
+    }
+
     public boolean isWhitelisted(ProcessDTO process) {
         for (Pattern pattern : whitelist) {
-            if (pattern.matcher(process.getCommand()).matches()
-                    || pattern.matcher(process.getCommandLine()).matches()) {
+            if (pattern.matcher(process.getCommand()).matches()) {
+                return true;
+            }
+        }
+        for (Pattern pattern : commandLineWhitelist) {
+            if (pattern.matcher(process.getCommandLine()).matches()) {
                 return true;
             }
         }

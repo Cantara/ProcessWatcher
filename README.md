@@ -16,7 +16,8 @@ pw.setFingerprintingPeriod(20 * 60 * 1000);   // learn the process baseline for 
 pw.setProcessScanInterval(5000);              // scan the process table every 5 seconds
 pw.setSuspiciousEscalationDelay(60 * 1000);   // re-report one level higher if still alive after 1 minute
 pw.setFingerprintBaselineFile(Paths.get("baseline.txt")); // skip re-learning on restart
-pw.whitelist(".*logrotate.*");                // regex matched against command and command line
+pw.whitelist(".*logrotate.*");                // regex matched against the executable path
+// pw.whitelistCommandLine(".*--allow.*");    // opt-in: matches the (spoofable) command line
 
 pw.registerSuspiciousProcessHandler(event -> {
     // an unknown, non-whitelisted process appeared after the fingerprinting period

@@ -75,6 +75,8 @@ public class ProcessWatcher {
 
     private final Set<String> whitelistPatterns = Sets.newConcurrentHashSet();
 
+    private final Set<String> commandLineWhitelistPatterns = Sets.newConcurrentHashSet();
+
     private final Set<String> extraInterpreters = Sets.newConcurrentHashSet();
 
     private Path fingerprintBaselineFile;
@@ -147,14 +149,27 @@ public class ProcessWatcher {
     }
 
     /**
-     * Whitelist processes matching a regex. The pattern is matched against both the command
-     * (executable path) and the full command line.
-     * @param regex the whitelist pattern
+     * Whitelist processes whose executable path matches the regex. Matching the executable
+     * path is spoof-resistant - a process cannot freely rewrite the path it was executed from.
+     * @param regex pattern matched against the command (executable path)
      */
     public void whitelist(String regex) {
         whitelistPatterns.add(regex);
         if (fingerprintStore != null) {
             fingerprintStore.addWhitelistPattern(regex);
+        }
+    }
+
+    /**
+     * Whitelist processes whose full command line matches the regex. Opt-in and to be used
+     * with care: a process can set its own argv to match a lax command-line pattern. Prefer
+     * {@link #whitelist(String)} where the executable path is sufficient.
+     * @param regex pattern matched against the full command line
+     */
+    public void whitelistCommandLine(String regex) {
+        commandLineWhitelistPatterns.add(regex);
+        if (fingerprintStore != null) {
+            fingerprintStore.addCommandLineWhitelistPattern(regex);
         }
     }
 
@@ -218,6 +233,9 @@ public class ProcessWatcher {
         }
         for (String pattern : whitelistPatterns) {
             store.addWhitelistPattern(pattern);
+        }
+        for (String pattern : commandLineWhitelistPatterns) {
+            store.addCommandLineWhitelistPattern(pattern);
         }
         for (String interpreter : extraInterpreters) {
             store.addInterpreter(interpreter);
@@ -304,6 +322,7 @@ public class ProcessWatcher {
         json.addProperty("scanProcessInterval", SCAN_PROCESS_INTERVAL);
         json.addProperty("fingerprintingPeriod", FINGERPRINTING_PERIOD);
         json.addProperty("whitelist", whitelistPatterns.toString());
+        json.addProperty("commandLineWhitelist", commandLineWhitelistPatterns.toString());
         json.addProperty("suspiciousEscalationDelay", SUSPICIOUS_ESCALATION_DELAY);
         json.addProperty("fingerprintBaselineFile", String.valueOf(fingerprintBaselineFile));
         json.addProperty("workerShutdownTimeout", WORKER_SHUTDOWN_TIMEOUT);
@@ -343,6 +362,7 @@ public class ProcessWatcher {
             terminatedHandler.clear();
             suspiciousHandler.clear();
             whitelistPatterns.clear();
+            commandLineWhitelistPatterns.clear();
             fingerprintBaselineFile = null;
             getProcessWorkerMap().clear();
             processWorkerMap = null;
