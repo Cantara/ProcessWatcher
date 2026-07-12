@@ -3,6 +3,7 @@ package no.cantara.process.support;
 import no.cantara.process.event.ProcessDTO;
 import org.testng.annotations.Test;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -54,6 +55,43 @@ public class FingerprintStoreTest {
         // varying arguments do not change the fingerprint
         ProcessDTO otherArgs = process("app", "/usr/bin/java", "/usr/bin/java -jar other.jar");
         assertTrue(store.isKnown(otherArgs));
+    }
+
+    @Test
+    public void testBaselineSaveAndLoadRoundTrip() throws Exception {
+        java.nio.file.Path baselineFile = java.nio.file.Paths.get("target", "fingerprint-baseline-test.txt");
+        java.nio.file.Files.deleteIfExists(baselineFile);
+
+        FingerprintStore store = new FingerprintStore(0);
+        store.learn(process("app", "/usr/bin/java", "/usr/bin/java -jar app.jar"));
+        store.learn(process("root", "/usr/sbin/sshd", "/usr/sbin/sshd -D"));
+        store.saveBaseline(baselineFile);
+
+        FingerprintStore restored = FingerprintStore.loadBaseline(baselineFile);
+        assertFalse(restored.isLearning(), "A restored baseline must not need a new learning period");
+        assertEquals(restored.size(), 2);
+        assertTrue(restored.isKnown(process("app", "/usr/bin/java", "/usr/bin/java -jar app.jar")));
+        assertTrue(restored.isKnown(process("root", "/usr/sbin/sshd", "/usr/sbin/sshd -D")));
+        assertTrue(restored.isKnownCommand("/usr/bin/java"));
+        assertFalse(restored.isKnown(process("evil", "/usr/bin/java", "/usr/bin/java -jar app.jar")));
+    }
+
+    @Test
+    public void testSaveBaselineOnceOnlyAfterLearning() throws Exception {
+        java.nio.file.Path baselineFile = java.nio.file.Paths.get("target", "fingerprint-baseline-once-test.txt");
+        java.nio.file.Files.deleteIfExists(baselineFile);
+
+        FingerprintStore learningStore = new FingerprintStore(60 * 1000);
+        learningStore.setBaselineFile(baselineFile);
+        learningStore.learn(process("app", "/usr/bin/java", "/usr/bin/java"));
+        learningStore.saveBaselineOnce();
+        assertFalse(java.nio.file.Files.exists(baselineFile), "Baseline must not be saved while still learning");
+
+        FingerprintStore completedStore = new FingerprintStore(0);
+        completedStore.setBaselineFile(baselineFile);
+        completedStore.learn(process("app", "/usr/bin/java", "/usr/bin/java"));
+        completedStore.saveBaselineOnce();
+        assertTrue(java.nio.file.Files.exists(baselineFile), "Baseline must be saved once learning has ended");
     }
 
     @Test

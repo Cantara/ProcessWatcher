@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Qualifies discovered processes against the fingerprint baseline and invokes the
@@ -25,8 +28,11 @@ public class ProcessEventsConsumer implements Runnable {
 
     private final BlockingQueue<ProcessWatchEvent> queue;
 
-    public ProcessEventsConsumer(BlockingQueue<ProcessWatchEvent> queue) {
+    private final ScheduledExecutorService escalationScheduler;
+
+    public ProcessEventsConsumer(BlockingQueue<ProcessWatchEvent> queue, ScheduledExecutorService escalationScheduler) {
         this.queue = queue;
+        this.escalationScheduler = escalationScheduler;
     }
 
     @Override
@@ -71,6 +77,11 @@ public class ProcessEventsConsumer implements Runnable {
             defconEvent = DefconEvent.classify(process, fingerprintStore);
         }
 
+        // the baseline is complete once the learning period has ended - persist it if configured
+        if (!fingerprintStore.isLearning()) {
+            fingerprintStore.saveBaselineOnce();
+        }
+
         ProcessWatchEvent qualifiedEvent = new ProcessWatchEvent(process, ProcessWatchKey.PROCESS_STARTED, state, defconEvent);
         ProcessWatcher.getInstance().post(qualifiedEvent);
         invokeHandlers(qualifiedEvent, ProcessWatcher.getInstance().getStartedHandlers());
@@ -80,6 +91,41 @@ public class ProcessEventsConsumer implements Runnable {
             ProcessWatcher.getInstance().post(suspiciousEvent);
             log.warn("Suspicious process detected: {}", suspiciousEvent);
             invokeHandlers(suspiciousEvent, ProcessWatcher.getInstance().getSuspiciousHandlers());
+            scheduleEscalation(process, defconEvent);
+        }
+    }
+
+    /**
+     * A suspicious process that remains alive beyond the escalation delay is re-reported
+     * with a one-level escalated grading - the process equivalent of PathWatcher's
+     * delayed FileCompletelyCreated qualification.
+     */
+    private void scheduleEscalation(ProcessDTO process, DefconEvent defconEvent) {
+        long delay = ProcessWatcher.SUSPICIOUS_ESCALATION_DELAY;
+        if (delay <= 0 || defconEvent.getLevel() <= 1) {
+            return;
+        }
+        try {
+            escalationScheduler.schedule(() -> {
+                boolean alive = ProcessHandle.of(process.getPid())
+                        .map(ProcessHandle::isAlive)
+                        .orElse(false);
+                if (!alive) {
+                    return;
+                }
+                FingerprintStore store = ProcessWatcher.getInstance().getFingerprintStore();
+                if (store.isKnown(process) || store.isWhitelisted(process)) {
+                    return;
+                }
+                DefconEvent escalated = DefconEvent.escalate(defconEvent);
+                ProcessWatchEvent escalatedEvent = new ProcessWatchEvent(process,
+                        ProcessWatchKey.PROCESS_SUSPICIOUS, ProcessWatchState.SUSPICIOUS, escalated);
+                ProcessWatcher.getInstance().post(escalatedEvent);
+                log.warn("Suspicious process still alive after {}ms, escalating: {}", delay, escalatedEvent);
+                invokeHandlers(escalatedEvent, ProcessWatcher.getInstance().getSuspiciousHandlers());
+            }, delay, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            // the watcher is shutting down - nothing to escalate
         }
     }
 

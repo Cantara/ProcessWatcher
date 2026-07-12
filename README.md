@@ -14,6 +14,8 @@ The main use-case here is to try to detect "listening probes" so that the applic
 ProcessWatcher pw = ProcessWatcher.getInstance();
 pw.setFingerprintingPeriod(20 * 60 * 1000);   // learn the process baseline for 20 minutes
 pw.setProcessScanInterval(5000);              // scan the process table every 5 seconds
+pw.setSuspiciousEscalationDelay(60 * 1000);   // re-report one level higher if still alive after 1 minute
+pw.setFingerprintBaselineFile(Paths.get("baseline.txt")); // skip re-learning on restart
 pw.whitelist(".*logrotate.*");                // regex matched against command and command line
 
 pw.registerSuspiciousProcessHandler(event -> {
@@ -31,6 +33,19 @@ not considered known (and is graded DEFCON3). The suspicious event grading is a 
 mapping: probing tools (nc, nmap, socat, ...) running privileged map to DEFCON1, unknown
 privileged processes or probing tools to DEFCON2, known commands under new users to DEFCON3
 and other unknown processes to DEFCON4.
+
+Two escalation heuristics raise a grading one level:
+
+* **Listening probes**: on Linux, a suspicious process holding a listening TCP socket
+  (detected through `/proc/net/tcp` and `/proc/<pid>/fd`) is escalated immediately, and the
+  event exposes the ports through `DefconEvent.getListeningPorts()`.
+* **Long-lived intruders**: a suspicious process still alive after the configured escalation
+  delay is re-reported with an escalated grading (`DefconEvent.isEscalated()`).
+
+When a fingerprint baseline file is configured, the learned baseline is persisted once the
+fingerprinting period ends (and on `stop()`). If the file exists at `start()` the baseline
+is restored and the watcher is armed immediately - a restarted service does not need a new
+learning period, during which an intruder would have been learned as normal.
 
 Requires Java 17+. Process discovery uses the JDK `ProcessHandle` API by default, with a
 `ps` based fallback scanner mode - no native libraries or external dependencies are needed.
