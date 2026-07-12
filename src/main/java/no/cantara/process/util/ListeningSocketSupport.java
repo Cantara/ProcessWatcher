@@ -41,6 +41,45 @@ public class ListeningSocketSupport {
     private static final Pattern SOCKET_INODE_PATTERN = Pattern.compile("socket:\\[(\\d+)]");
 
     /**
+     * Probes whether this process can inspect the sockets of processes owned by another
+     * user - the capability the whole socket-based escalation layer depends on. Reading
+     * {@code /proc/<pid>/fd} of a foreign-user process requires root or CAP_SYS_PTRACE;
+     * a normal service user can only inspect its own processes.
+     *
+     * @return true if a foreign-user process' fd table could be read, false when socket
+     * based escalation is effectively limited to this user's own processes (or not Linux)
+     */
+    public static boolean canInspectForeignProcessSockets() {
+        if (!FileSystemSupport.isLinux()) {
+            return false;
+        }
+        // pid 1 (init) is always present and root-owned; readable only with privilege
+        if (isFdTableReadable(1)) {
+            return true;
+        }
+        long ownPid = ProcessHandle.current().pid();
+        String ownUser = ProcessHandle.current().info().user().orElse("");
+        return ProcessHandle.allProcesses()
+                .filter(handle -> handle.pid() != ownPid)
+                .filter(handle -> !handle.info().user().orElse("").equals(ownUser))
+                .limit(20)
+                .anyMatch(handle -> isFdTableReadable(handle.pid()));
+    }
+
+    private static boolean isFdTableReadable(long pid) {
+        Path fdDir = Paths.get("/proc/" + pid + "/fd");
+        if (!Files.exists(fdDir)) {
+            return false;
+        }
+        try (DirectoryStream<Path> fds = Files.newDirectoryStream(fdDir)) {
+            fds.iterator();
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
      * @return socket inode to local port for all TCP sockets in LISTEN state on this host
      */
     public static Map<String, Integer> listeningInodeToPort() {

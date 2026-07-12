@@ -39,6 +39,29 @@ public class ListeningSocketSupportTest {
     }
 
     @Test
+    public void testForeignSocketInspectionCapabilityProbe() {
+        boolean capable = ListeningSocketSupport.canInspectForeignProcessSockets();
+        log.info("canInspectForeignProcessSockets = {}", capable);
+
+        if (!FileSystemSupport.isLinux()) {
+            assertFalse(capable, "Capability must be false on non-Linux platforms");
+            return;
+        }
+        // the probe must agree with the ground truth of whether pid 1's fd table is readable
+        boolean pid1Readable;
+        try (java.nio.file.DirectoryStream<java.nio.file.Path> s =
+                     java.nio.file.Files.newDirectoryStream(java.nio.file.Paths.get("/proc/1/fd"))) {
+            s.iterator();
+            pid1Readable = true;
+        } catch (Exception e) {
+            pid1Readable = false;
+        }
+        if (pid1Readable) {
+            assertTrue(capable, "Probe must report capable when a root-owned process' fd table is readable");
+        }
+    }
+
+    @Test
     public void testDetectRawAndPacketSockets() throws Exception {
         Process socketHolder = SocketHolderHelper.spawnSocketHolder();
         if (socketHolder == null) {

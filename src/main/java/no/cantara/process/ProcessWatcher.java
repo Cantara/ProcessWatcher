@@ -13,6 +13,7 @@ import no.cantara.process.support.FingerprintStore;
 import no.cantara.process.support.ProcessWatchHandler;
 import no.cantara.process.support.ProcessWatchScanner;
 import no.cantara.process.support.ProcessWorkerMap;
+import no.cantara.process.util.ListeningSocketSupport;
 import no.cantara.process.worker.EventWorker;
 import no.cantara.process.worker.ProcessConsumerWorker;
 import no.cantara.process.worker.ProcessProducerWorker;
@@ -305,6 +306,7 @@ public class ProcessWatcher {
             processConsumerWorker.start();
 
             running = true;
+            warnIfSocketEscalationUnavailable();
             log.trace("ProcessWatcher is started with configuration:\n{}", getConfigInfo());
         } else {
             log.trace("Cannot start ProcessWatcher because it is already running!");
@@ -331,6 +333,24 @@ public class ProcessWatcher {
             log.trace("ProcessWatcher is now shutdown!");
         } else {
             log.trace("Cannot stop ProcessWatcher because it is shutdown!");
+        }
+    }
+
+    /**
+     * @return true if socket-based DEFCON escalation (listening probes, raw and packet
+     * sockets) can observe processes owned by other users. When false, that escalation is
+     * limited to this watcher's own user - run as root or grant CAP_SYS_PTRACE to enable it.
+     */
+    public boolean isSocketEscalationAvailable() {
+        return ListeningSocketSupport.canInspectForeignProcessSockets();
+    }
+
+    private void warnIfSocketEscalationUnavailable() {
+        if (!isSocketEscalationAvailable()) {
+            log.warn("Socket-based threat escalation is DISABLED: cannot read other users' "
+                    + "process sockets (needs root or CAP_SYS_PTRACE). Listening-probe, raw-socket "
+                    + "and packet-sniffer escalation will only apply to processes owned by '{}'.",
+                    System.getProperty("user.name"));
         }
     }
 
