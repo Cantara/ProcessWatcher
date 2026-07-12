@@ -59,14 +59,30 @@ public abstract class AbstractProcessEventsProducer implements ProcessEventsProd
                     }
                 }
 
-                // pids absent from the map are newly started (or existed before the first scan)
+                // pids absent from the map are newly started; a pid present in the map but
+                // with a changed start time is a recycled pid - a different process reusing
+                // the identifier - and must be terminated then re-qualified as new
                 for (Map.Entry<Long, ProcessDTO> entry : discoveredProcesses.entrySet()) {
-                    if (!processWorkerMap.contains(entry.getKey())) {
-                        ProcessWatchEvent processWatchEvent = new ProcessWatchEvent(entry.getValue(),
+                    Long pid = entry.getKey();
+                    ProcessDTO discovered = entry.getValue();
+                    boolean known = processWorkerMap.contains(pid);
+
+                    if (known && isRecycledPid(processWorkerMap, pid, discovered)) {
+                        ProcessWatchEvent lastEvent = processWorkerMap.getProcess(pid);
+                        ProcessWatchEvent terminated = new ProcessWatchEvent(lastEvent.getProcess(),
+                                ProcessWatchKey.PROCESS_TERMINATED, lastEvent.getProcessWatchState());
+                        ProcessWatcher.getInstance().post(terminated);
+                        queue.put(terminated);
+                        log.trace("Discovery - pid {} recycled, terminating stale instance", pid);
+                        known = false;
+                    }
+
+                    if (!known) {
+                        ProcessWatchEvent processWatchEvent = new ProcessWatchEvent(discovered,
                                 ProcessWatchKey.PROCESS_STARTED, ProcessWatchState.DISCOVERED);
                         ProcessWatcher.getInstance().post(processWatchEvent);
                         queue.put(processWatchEvent);
-                        log.trace("Discovery - Produced: [{}]{}", processWatchEvent.getProcessWatchKey(), entry.getKey());
+                        log.trace("Discovery - Produced: [{}]{}", processWatchEvent.getProcessWatchKey(), pid);
                     }
                 }
 
@@ -83,6 +99,22 @@ public abstract class AbstractProcessEventsProducer implements ProcessEventsProd
                 log.error("ProcessProducer failed to snapshot processes", e);
             }
         }
+    }
+
+    /**
+     * @return true if the pid is already tracked but the discovered instance has a different
+     * start time - i.e. the OS reused the pid for a different process. Only decidable when
+     * both start times are known (the native scanner provides them; the ps fallback does not,
+     * so recycled-pid detection is native-mode only).
+     */
+    private static boolean isRecycledPid(ProcessWorkerMap map, Long pid, ProcessDTO discovered) {
+        ProcessWatchEvent lastEvent = map.getProcess(pid);
+        if (lastEvent == null) {
+            return false;
+        }
+        long knownStart = lastEvent.getProcess().getStartTimeEpochMs();
+        long discoveredStart = discovered.getStartTimeEpochMs();
+        return knownStart > 0 && discoveredStart > 0 && knownStart != discoveredStart;
     }
 
     @Override
