@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProcessWatcher — a process IDS threat notifier for the JVM</title>
+<meta name="description" content="ProcessWatcher is a lightweight Java library that fingerprints your host's processes, then raises DEFCON-graded events when unknown processes appear. Zero native dependencies, Java 17+.">
+<style>
+  :root {
+    --ground: #f6f8fb;
+    --surface: #ffffff;
+    --surface-2: #eef2f7;
+    --ink: #16202b;
+    --ink-soft: #3a4a5a;
+    --muted: #647587;
+    --line: #dde5ee;
+    --line-strong: #c6d2df;
+    --accent: #0d9488;
+    --accent-ink: #0b7d72;
+    --accent-contrast: #ffffff;
+    --code-bg: #0e141b;
+    --code-ink: #d6e2ee;
+
+    --d1: #d1373c;
+    --d2: #e0742f;
+    --d3: #c69414;
+    --d4: #5f7488;
+    --d5: #2f9e4a;
+
+    --maxw: 1120px;
+    --radius: 14px;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0e141b;
+      --surface: #151e28;
+      --surface-2: #1b2733;
+      --ink: #e7eef5;
+      --ink-soft: #b7c4d1;
+      --muted: #8598a9;
+      --line: #253341;
+      --line-strong: #33465a;
+      --accent: #2dd4bf;
+      --accent-ink: #5ee0d0;
+      --accent-contrast: #06231f;
+      --code-bg: #0a0f15;
+      --code-ink: #d6e2ee;
+      --d1: #e5484d;
+      --d2: #f0883e;
+      --d3: #e3b341;
+      --d4: #7c93a8;
+      --d5: #3fb950;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f6f8fb; --surface: #ffffff; --surface-2: #eef2f7; --ink: #16202b;
+    --ink-soft: #3a4a5a; --muted: #647587; --line: #dde5ee; --line-strong: #c6d2df;
+    --accent: #0d9488; --accent-ink: #0b7d72; --accent-contrast: #ffffff;
+    --code-bg: #0e141b; --code-ink: #d6e2ee;
+    --d1: #d1373c; --d2: #e0742f; --d3: #c69414; --d4: #5f7488; --d5: #2f9e4a;
+  }
+  :root[data-theme="dark"] {
+    --ground: #0e141b; --surface: #151e28; --surface-2: #1b2733; --ink: #e7eef5;
+    --ink-soft: #b7c4d1; --muted: #8598a9; --line: #253341; --line-strong: #33465a;
+    --accent: #2dd4bf; --accent-ink: #5ee0d0; --accent-contrast: #06231f;
+    --code-bg: #0a0f15; --code-ink: #d6e2ee;
+    --d1: #e5484d; --d2: #f0883e; --d3: #e3b341; --d4: #7c93a8; --d5: #3fb950;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  a { color: var(--accent-ink); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1, h2, h3 { text-wrap: balance; line-height: 1.12; letter-spacing: -0.02em; margin: 0; }
+  p { margin: 0; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  .mono { font-family: var(--mono); }
+
+  /* ---- nav ---- */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--ground) 82%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner { display: flex; align-items: center; gap: 20px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+  .brand:hover { text-decoration: none; }
+  .brand .glyph {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: radial-gradient(circle at 50% 50%, var(--accent) 0 3px, transparent 4px),
+                conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--accent) 55%, transparent), transparent 60%);
+    border: 1px solid var(--line-strong);
+    position: relative; flex: none;
+  }
+  .nav-links { display: flex; gap: 22px; margin-left: auto; align-items: center; }
+  .nav-links a { color: var(--ink-soft); font-size: 14px; font-weight: 500; }
+  .nav-links a:hover { color: var(--ink); text-decoration: none; }
+  .nav-cta {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    border: 1px solid var(--line-strong); padding: 7px 13px; border-radius: 8px;
+    color: var(--ink) !important;
+  }
+  .nav-cta:hover { border-color: var(--accent); }
+  .theme-toggle {
+    background: none; border: 1px solid var(--line-strong); color: var(--ink-soft);
+    width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 15px;
+    display: grid; place-items: center;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--ink); }
+  @media (max-width: 760px) { .nav-links a.hide-sm { display: none; } }
+
+  /* ---- hero ---- */
+  .hero { padding: 74px 0 40px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+  @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; gap: 34px; } }
+  h1.title { font-size: clamp(34px, 5.2vw, 56px); font-weight: 800; margin-top: 16px; }
+  h1.title .hl { color: var(--accent-ink); }
+  .lede { font-size: clamp(17px, 2vw, 20px); color: var(--ink-soft); margin-top: 20px; max-width: 34em; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .btn {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    padding: 12px 20px; border-radius: 10px; cursor: pointer; border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 9px;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-contrast); }
+  .btn-primary:hover { text-decoration: none; filter: brightness(1.06); }
+  .btn-ghost { border-color: var(--line-strong); color: var(--ink); }
+  .btn-ghost:hover { text-decoration: none; border-color: var(--accent); }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 26px; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .meta-row span { display: inline-flex; align-items: center; gap: 7px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+
+  /* ---- event stream card ---- */
+  .scope {
+    background: var(--code-bg); border: 1px solid var(--line-strong); border-radius: var(--radius);
+    overflow: hidden; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.55);
+  }
+  .scope-bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .scope-bar .tl { width: 11px; height: 11px; border-radius: 50%; background: #46525f; }
+  .scope-title { font-family: var(--mono); font-size: 11.5px; color: #8ea0b2; margin-left: 6px; letter-spacing: 0.04em; }
+  .scope-body { padding: 16px 16px 18px; font-family: var(--mono); font-size: 12.6px; color: var(--code-ink); position: relative; min-height: 268px; }
+  .scope-body::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(rgba(45,212,191,0.05), transparent 42%);
+  }
+  .log-line { display: flex; gap: 10px; padding: 3px 0; opacity: 0; transform: translateY(4px); animation: rise 0.5s ease forwards; }
+  .log-line .t { color: #5c6b7a; flex: none; }
+  .log-line .m { color: #aebccb; }
+  .log-line .tag { flex: none; font-weight: 700; padding: 0 6px; border-radius: 4px; font-size: 11px; align-self: center; }
+  .tag.learn { color: #7c93a8; border: 1px solid rgba(124,147,168,0.4); }
+  .tag.known { color: #3fb950; border: 1px solid rgba(63,185,80,0.4); }
+  .tag.susp { color: #e5484d; border: 1px solid rgba(229,72,77,0.5); background: rgba(229,72,77,0.08); }
+  .log-line.d1 .m b { color: #e5484d; }
+  .scan {
+    height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 10px 0; opacity: 0.0; animation: sweep 2.6s ease-in-out 0.2s infinite;
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  @keyframes sweep { 0% { opacity: 0; transform: translateX(-30%);} 50% { opacity: 0.9; } 100% { opacity: 0; transform: translateX(30%);} }
+  @media (prefers-reduced-motion: reduce) {
+    .log-line { opacity: 1; transform: none; animation: none; }
+    .scan { animation: none; opacity: 0.5; }
+  }
+
+  /* ---- sections ---- */
+  section { padding: 60px 0; border-top: 1px solid var(--line); }
+  .sec-head { max-width: 42em; margin-bottom: 34px; }
+  h2 { font-size: clamp(25px, 3.4vw, 34px); font-weight: 750; margin-top: 12px; }
+  .sec-head p { color: var(--ink-soft); margin-top: 14px; font-size: 17px; }
+
+  /* two-phase */
+  .phases { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .phases { grid-template-columns: 1fr; } }
+  .phase {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px;
+  }
+  .phase .n { font-family: var(--mono); font-size: 12px; color: var(--accent-ink); letter-spacing: 0.12em; }
+  .phase h3 { font-size: 19px; margin: 8px 0 10px; }
+  .phase p { color: var(--ink-soft); font-size: 15px; }
+
+  /* quickstart */
+  .quick-grid { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 28px; align-items: start; }
+  @media (max-width: 860px) { .quick-grid { grid-template-columns: 1fr; } }
+  .steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 20px; }
+  .steps li { display: flex; gap: 14px; }
+  .steps .idx { font-family: var(--mono); font-weight: 700; color: var(--accent-ink); flex: none; width: 26px; }
+  .steps h3 { font-size: 16px; margin-bottom: 3px; }
+  .steps p { color: var(--muted); font-size: 14px; }
+  pre {
+    margin: 0; background: var(--code-bg); color: var(--code-ink);
+    border: 1px solid var(--line-strong); border-radius: 12px;
+    padding: 18px 18px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.66;
+  }
+  pre + pre { margin-top: 14px; }
+  .code-label { font-family: var(--mono); font-size: 11.5px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 8px 2px; }
+  .c-key { color: #7ee0d0; } .c-str { color: #e3b341; } .c-com { color: #5c6b7a; } .c-typ { color: #8fb8ff; } .c-fn { color: #6ee7d3; }
+  :root[data-theme="light"] .c-key { color: #2dd4bf; } :root[data-theme="light"] .c-typ { color: #79a6ff; }
+
+  /* pipeline */
+  .pipe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 820px) { .pipe { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 460px) { .pipe { grid-template-columns: 1fr; } }
+  .stage { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; position: relative; }
+  .stage .k { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; }
+  .stage h3 { font-size: 15.5px; margin: 8px 0 6px; }
+  .stage p { font-size: 13.5px; color: var(--ink-soft); }
+
+  /* capability grid */
+  .caps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .caps { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .caps { grid-template-columns: 1fr; } }
+  .cap { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .cap .ic { font-family: var(--mono); font-size: 12px; color: var(--accent-ink); letter-spacing: 0.08em; }
+  .cap h3 { font-size: 16px; margin: 10px 0 8px; }
+  .cap p { font-size: 14px; color: var(--ink-soft); }
+  .cap code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; color: var(--ink); }
+
+  /* defcon table */
+  .tbl-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 620px; }
+  th, td { text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  .lvl { font-family: var(--mono); font-weight: 700; display: inline-flex; align-items: center; gap: 9px; white-space: nowrap; }
+  .sev { width: 10px; height: 22px; border-radius: 3px; flex: none; }
+  .s1 { background: var(--d1); } .s2 { background: var(--d2); } .s3 { background: var(--d3); } .s4 { background: var(--d4); } .s5 { background: var(--d5); }
+
+  /* comparison */
+  .cmp td.yes { color: var(--d5); font-weight: 600; }
+  .cmp td.no { color: var(--muted); }
+  .cmp td.part { color: var(--d3); }
+  .cmp .mono { font-size: 12.5px; }
+  .cmp th.col { text-align: center; }
+  .cmp td.mark { text-align: center; font-family: var(--mono); }
+  .note { margin-top: 16px; font-size: 14px; color: var(--ink-soft); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 15px 18px; }
+
+  /* use cases */
+  .cases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 720px) { .cases { grid-template-columns: 1fr; } }
+  .case { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+  .case .tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-ink); }
+  .case h3 { font-size: 17px; margin: 10px 0 8px; }
+  .case p { font-size: 14.5px; color: var(--ink-soft); }
+
+  /* limits */
+  .limits { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+  @media (max-width: 720px) { .limits { grid-template-columns: 1fr; } }
+  .limit { display: flex; gap: 12px; padding: 4px 0; }
+  .limit .b { color: var(--d3); font-family: var(--mono); flex: none; }
+  .limit p { font-size: 14px; color: var(--ink-soft); }
+  .limit b { color: var(--ink); font-weight: 600; }
+
+  /* final cta */
+  .final { text-align: center; padding: 76px 0; }
+  .final h2 { margin-bottom: 16px; }
+  .final p { color: var(--ink-soft); max-width: 32em; margin: 0 auto 28px; font-size: 17px; }
+
+  footer { border-top: 1px solid var(--line); padding: 34px 0 48px; color: var(--muted); font-size: 13.5px; }
+  .foot-inner { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+  .foot-links { display: flex; gap: 20px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; }
+  .foot-links a { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top"><span class="glyph" aria-hidden="true"></span> ProcessWatcher</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#how" class="hide-sm">How it works</a>
+      <a href="#capabilities" class="hide-sm">Capabilities</a>
+      <a href="#defcon" class="hide-sm">DEFCON</a>
+      <a href="#compare" class="hide-sm">Compare</a>
+      <a class="nav-cta" href="https://github.com/Cantara/ProcessWatcher">GitHub ↗</a>
+      <button class="theme-toggle" id="themeBtn" aria-label="Toggle color theme" title="Toggle theme">◐</button>
+    </nav>
+  </div>
+</header>
+
+<a id="top"></a>
+<main>
+<section class="hero" style="border-top:none">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Process intrusion detection · JVM library</span>
+      <h1 class="title">Know when a <span class="hl">stranger</span> shows up on your host.</h1>
+      <p class="lede">ProcessWatcher learns the processes your machine normally runs, then raises
+        DEFCON-graded events the moment an unknown, non-whitelisted process appears — a simplified,
+        embeddable process IDS for Java services. No native libraries, no agents to install.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#quickstart">Quickstart →</a>
+        <a class="btn btn-ghost" href="https://github.com/Cantara/ProcessWatcher">View on GitHub</a>
+      </div>
+      <div class="meta-row">
+        <span><i class="dot"></i> Java 17+</span>
+        <span><i class="dot"></i> Zero native dependencies</span>
+        <span><i class="dot"></i> Apache-2.0</span>
+        <span><i class="dot"></i> Cantara open source</span>
+      </div>
+    </div>
+
+    <div class="scope" role="img" aria-label="Example event stream: processes are learned, matched against the baseline, and an unknown netcat process is graded DEFCON 1.">
+      <div class="scope-bar">
+        <span class="tl"></span><span class="tl"></span><span class="tl"></span>
+        <span class="scope-title">processwatcher · live events</span>
+      </div>
+      <div class="scope-body">
+        <div class="log-line" style="animation-delay:.05s"><span class="t">10:02:07</span><span class="tag learn">LEARN</span><span class="m">/usr/bin/java &nbsp;user=app</span></div>
+        <div class="log-line" style="animation-delay:.20s"><span class="t">10:02:07</span><span class="tag learn">LEARN</span><span class="m">/usr/sbin/sshd &nbsp;user=root</span></div>
+        <div class="log-line" style="animation-delay:.35s"><span class="t">10:02:08</span><span class="tag learn">LEARN</span><span class="m">/usr/bin/python3 server.py</span></div>
+        <div class="scan"></div>
+        <div class="log-line" style="animation-delay:.7s"><span class="t">10:22:07</span><span class="tag known">KNOWN</span><span class="m">/usr/bin/java &nbsp;user=app</span></div>
+        <div class="log-line d1" style="animation-delay:.95s"><span class="t">10:22:41</span><span class="tag susp">SUSPICIOUS</span><span class="m">/usr/bin/nc -lvnp 4444 &nbsp;user=root</span></div>
+        <div class="log-line d1" style="animation-delay:1.15s"><span class="t">10:22:41</span><span class="m">&nbsp; ↳ <b>DEFCON 1</b> — probing tool, privileged, listening on :4444</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The idea</span>
+      <h2>Two phases: learn what's normal, then flag what isn't.</h2>
+      <p>Borderline security died last millennium. ProcessWatcher makes a service <em>aware</em> of the
+      processes running around it — so it can react when its environment is infiltrated.</p>
+    </div>
+    <div class="phases">
+      <div class="phase">
+        <div class="n">PHASE 1 — FINGERPRINT</div>
+        <h3>Record the baseline</h3>
+        <p>For a configurable window — 20 minutes on a quiet server, 36 hours where daily cron jobs run —
+        every observed process is fingerprinted (<code class="mono">user|command</code>) and learned.
+        Interpreters like <span class="mono">python</span> and <span class="mono">bash</span> are
+        fingerprinted on their full command line, so a trusted shell can't smuggle an unknown payload past you.</p>
+      </div>
+      <div class="phase">
+        <div class="n">PHASE 2 — DETECT</div>
+        <h3>Grade the strangers</h3>
+        <p>After the window, any process whose fingerprint isn't in the baseline — and doesn't match a
+        whitelist — raises a suspicious event carrying a naive DEFCON threat level. A listening socket, a
+        raw/packet capture socket, or simply staying alive pushes the grade higher.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Quickstart</span>
+      <h2>Armed in about a dozen lines.</h2>
+      <p>Add the dependency, declare a learning window and a handler, and start. Everything else has a sane default.</p>
+    </div>
+    <div class="quick-grid">
+      <ol class="steps">
+        <li><span class="idx">01</span><div><h3>Add the dependency</h3><p>Maven or Gradle, from the Cantara repository.</p></div></li>
+        <li><span class="idx">02</span><div><h3>Configure &amp; register a handler</h3><p>Set the learning window, whitelist the known-good, react to suspicious events.</p></div></li>
+        <li><span class="idx">03</span><div><h3>Start watching</h3><p>Discovery uses the JDK <span class="mono">ProcessHandle</span> API by default — no native libs.</p></div></li>
+      </ol>
+      <div>
+        <p class="code-label">pom.xml</p>
+<pre><span class="c-com">&lt;!-- repository: https://mvnrepo.cantara.no --&gt;</span>
+<span class="c-typ">&lt;dependency&gt;</span>
+  <span class="c-typ">&lt;groupId&gt;</span>no.cantara.processwatcher<span class="c-typ">&lt;/groupId&gt;</span>
+  <span class="c-typ">&lt;artifactId&gt;</span>processwatcher<span class="c-typ">&lt;/artifactId&gt;</span>
+  <span class="c-typ">&lt;version&gt;</span>0.1-SNAPSHOT<span class="c-typ">&lt;/version&gt;</span>
+<span class="c-typ">&lt;/dependency&gt;</span></pre>
+        <p class="code-label" style="margin-top:16px">Watcher.java</p>
+<pre><span class="c-typ">ProcessWatcher</span> pw = <span class="c-typ">ProcessWatcher</span>.<span class="c-fn">getInstance</span>();
+
+pw.<span class="c-fn">setFingerprintingPeriod</span>(<span class="c-str">20</span> * <span class="c-str">60</span> * <span class="c-str">1000</span>);   <span class="c-com">// learn for 20 minutes</span>
+pw.<span class="c-fn">whitelist</span>(<span class="c-str">".*/logrotate"</span>);              <span class="c-com">// match on executable path</span>
+pw.<span class="c-fn">setFingerprintBaselineFile</span>(<span class="c-typ">Path</span>.<span class="c-fn">of</span>(<span class="c-str">"baseline.txt"</span>)); <span class="c-com">// survive restarts</span>
+
+pw.<span class="c-fn">registerSuspiciousProcessHandler</span>(event -> {
+    <span class="c-typ">DefconEvent</span> defcon = event.<span class="c-fn">getDefconEvent</span>();
+    log.<span class="c-fn">warn</span>(<span class="c-str">"IDS signal: DEFCON {} — {}"</span>,
+             defcon.<span class="c-fn">getLevel</span>(), event.<span class="c-fn">getProcess</span>());
+});
+
+pw.<span class="c-fn">start</span>();</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">How it works</span>
+      <h2>A producer–consumer pipeline, straight out of the JDK.</h2>
+      <p>Each scan snapshots the process table and diffs it against the last one. New processes are
+      qualified against the baseline; the survivors get graded and handed to your handlers.</p>
+    </div>
+    <div class="pipe">
+      <div class="stage"><div class="k">SCAN</div><h3>Snapshot</h3><p>Every interval, list processes via <span class="mono">ProcessHandle</span> (native) or <span class="mono">ps</span> (fallback).</p></div>
+      <div class="stage"><div class="k">DIFF</div><h3>Started / ended</h3><p>Compare against the last snapshot by <span class="mono">pid + start time</span> — recycled pids are re-qualified.</p></div>
+      <div class="stage"><div class="k">QUALIFY</div><h3>Known?</h3><p>Learning, known, whitelisted — or suspicious. Only strangers move on.</p></div>
+      <div class="stage"><div class="k">GRADE</div><h3>DEFCON + escalate</h3><p>Score the threat, escalate on sockets or longevity, invoke your handler.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="capabilities">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Capabilities</span>
+      <h2>Detection that resists the obvious evasions.</h2>
+      <p>The naive core is deliberately simple. These signals harden it against the ways an intruder
+      tries to look normal.</p>
+    </div>
+    <div class="caps">
+      <div class="cap"><div class="ic">FINGERPRINT</div><h3>Learn &amp; recognise</h3><p>A <code>user|command</code> baseline. A known binary started by a new user is not treated as known.</p></div>
+      <div class="cap"><div class="ic">LOTL</div><h3>Interpreter-aware</h3><p><code>python3 -c '&hellip;'</code> won't pass as known just because python ran during learning — interpreters fingerprint on their command line.</p></div>
+      <div class="cap"><div class="ic">SOCKETS</div><h3>Listening probes</h3><p>A suspicious process holding a listening TCP socket is escalated, and the event reports the ports.</p></div>
+      <div class="cap"><div class="ic">SNIFFERS</div><h3>Raw &amp; packet capture</h3><p>Raw IP and <span class="mono">AF_PACKET</span> sockets — the footprint of scanners and sniffers — escalate the grade.</p></div>
+      <div class="cap"><div class="ic">PERSISTENCE</div><h3>Long-lived intruders</h3><p>A stranger still alive after the escalation delay is re-reported one level higher.</p></div>
+      <div class="cap"><div class="ic">BASELINE</div><h3>Armed on restart</h3><p>Persist the baseline and a restarted service skips re-learning — no window for an intruder to be learned as normal.</p></div>
+      <div class="cap"><div class="ic">WHITELIST</div><h3>Spoof-resistant</h3><p>Whitelisting matches the executable path by default; command-line matching is opt-in and clearly flagged as spoofable.</p></div>
+      <div class="cap"><div class="ic">FAIL-LOUD</div><h3>Honest about privilege</h3><p>Socket signals need root or <span class="mono">CAP_SYS_PTRACE</span>; when unavailable the watcher warns instead of silently seeing nothing.</p></div>
+      <div class="cap"><div class="ic">ZERO DEPS</div><h3>Pure JDK discovery</h3><p><span class="mono">ProcessHandle</span> by default, <span class="mono">ps</span> as fallback. No Sigar, no bundled <span class="mono">.so</span> files, no runtime downloads.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="defcon">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Threat grading</span>
+      <h2>A naive DEFCON scale — an indication, not a verdict.</h2>
+      <p>The grade is a simple, transparent heuristic you can reason about. Treat it as a signal to act on,
+      not authoritative severity. Socket and longevity signals move a grade one level toward the top.</p>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Level</th><th>Raised when</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="lvl"><span class="sev s1"></span>DEFCON 1</span></td><td>A known probing tool running with elevated privileges.</td><td class="mono">nc -lvnp 4444 · root</td></tr>
+          <tr><td><span class="lvl"><span class="sev s2"></span>DEFCON 2</span></td><td>A probing tool, or an unknown process, running privileged.</td><td class="mono">/opt/x/daemon · root</td></tr>
+          <tr><td><span class="lvl"><span class="sev s3"></span>DEFCON 3</span></td><td>A known command with an unknown fingerprint — same binary, new user.</td><td class="mono">/usr/bin/java · nobody</td></tr>
+          <tr><td><span class="lvl"><span class="sev s4"></span>DEFCON 4</span></td><td>An unknown process under a regular user.</td><td class="mono">/tmp/./miner · app</td></tr>
+          <tr><td><span class="lvl"><span class="sev s5"></span>DEFCON 5</span></td><td>Normal readiness — nothing unexpected.</td><td class="mono">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="usecases">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Use cases</span>
+      <h2>What it's good at catching.</h2>
+    </div>
+    <div class="cases">
+      <div class="case"><span class="tag">Listening probes</span><h3>A reverse shell or bind listener</h3><p>The headline use case: an unfamiliar process opens a listening socket on your host. ProcessWatcher flags it and hands you the ports it's on.</p></div>
+      <div class="case"><span class="tag">Living off the land</span><h3>A trusted interpreter, an untrusted script</h3><p>An attacker runs their payload through <span class="mono">python</span> or <span class="mono">bash</span> to blend in. Command-line fingerprinting means it still reads as a stranger.</p></div>
+      <div class="case"><span class="tag">Recon &amp; capture</span><h3>A sniffer or port scanner drops in</h3><p>Raw and packet-capture sockets betray tools that watch traffic or map the network — the grade escalates automatically.</p></div>
+      <div class="case"><span class="tag">Developer awareness</span><h3>Seeing is believing, in your own logs</h3><p>Wire the events to your logging or alerting and give developers a felt sense of what actually runs beside their service in production.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Where it fits</span>
+      <h2>An in-process signal, not a replacement for a HIDS.</h2>
+      <p>ProcessWatcher's angle is that it lives <em>inside</em> your JVM service and needs nothing installed on the
+      host. It is not trying to be a full host intrusion detection system — and the honest comparison says so.</p>
+    </div>
+    <div class="tbl-scroll">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th>&nbsp;</th>
+            <th class="col">ProcessWatcher</th>
+            <th class="col">Roll-your-own <span class="mono">ps</span></th>
+            <th class="col">Sigar-based (legacy)</th>
+            <th class="col">auditd / osquery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Runs inside the JVM as a library</td><td class="mark yes">●</td><td class="mark part">◐</td><td class="mark yes">●</td><td class="mark no">—</td></tr>
+          <tr><td>Zero native deps / nothing to install</td><td class="mark yes">●</td><td class="mark yes">●</td><td class="mark no">—</td><td class="mark no">—</td></tr>
+          <tr><td>Learns a baseline &amp; grades strangers</td><td class="mark yes">●</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark part">◐</td></tr>
+          <tr><td>App-level events &amp; handlers</td><td class="mark yes">●</td><td class="mark part">◐</td><td class="mark part">◐</td><td class="mark no">—</td></tr>
+          <tr><td>Listening / raw / packet socket signals</td><td class="mark yes">●</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">●</td></tr>
+          <tr><td>Kernel-level syscall &amp; file-integrity coverage</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">●</td></tr>
+          <tr><td>Deployment weight</td><td class="mono" style="color:var(--d5)">tiny</td><td class="mono" style="color:var(--d3)">DIY</td><td class="mono" style="color:var(--d3)">heavy</td><td class="mono" style="color:var(--d2)">ops-managed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>Honest positioning:</b> if you need kernel-level auditing, file-integrity monitoring, or
+    fleet-wide telemetry, reach for <span class="mono">auditd</span> or <span class="mono">osquery</span> — they
+    see things a userspace library never will. ProcessWatcher is the lightweight, embeddable complement: it gives a
+    single service self-awareness with one dependency and no host agent. Use both.</p>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Known limits</span>
+      <h2>What it can't do — stated plainly.</h2>
+      <p>A best-effort notifier, not a hardened IDS. Plan around these, and it earns its keep.</p>
+    </div>
+    <div class="limits">
+      <div class="limit"><span class="b">›</span><p><b>Trust on first use.</b> An intruder already resident when learning starts is learned as normal. Baseline on a known-clean host.</p></div>
+      <div class="limit"><span class="b">›</span><p><b>Privilege for socket signals.</b> Reading another process's sockets needs root or a capability; otherwise escalation only covers the watcher's own user.</p></div>
+      <div class="limit"><span class="b">›</span><p><b>A polling blind spot.</b> A process that starts and exits within one scan interval may go unseen. Lower the interval to narrow it.</p></div>
+      <div class="limit"><span class="b">›</span><p><b>The grade is coarse.</b> DEFCON levels are a naive heuristic, including the privilege guess — a signal to act on, not authoritative severity.</p></div>
+      <div class="limit"><span class="b">›</span><p><b>The baseline file is trusted.</b> Anyone who can write it can self-whitelist. Store it <span class="mono">0600</span>, owned by the service user.</p></div>
+      <div class="limit"><span class="b">›</span><p><b>Poll mode is best-effort.</b> The <span class="mono">ps</span> fallback filters injected phantom pids, but the native scanner is the default and more robust.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="final" style="border-top:none">
+  <div class="wrap">
+    <span class="eyebrow">Work in progress · collaboration wanted</span>
+    <h2>Give your service a sense of who's home.</h2>
+    <p>The core two-phase flow is implemented and tested. Try it, wire it to your alerting, and tell us where it should go next.</p>
+    <div class="cta-row" style="justify-content:center">
+      <a class="btn btn-primary" href="https://github.com/Cantara/ProcessWatcher">Get started on GitHub →</a>
+      <a class="btn btn-ghost" href="https://github.com/Cantara/ProcessWatcher/blob/master/README.md">Read the docs</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div>
+      <div class="mono" style="color:var(--ink)">ProcessWatcher</div>
+      <div style="margin-top:6px">Part of the <a href="https://wiki.cantara.no">Cantara</a> open source ecosystem · Apache-2.0</div>
+    </div>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="https://github.com/Cantara/ProcessWatcher">Source</a>
+      <a href="https://github.com/Cantara/ProcessWatcher/issues">Issues</a>
+      <a href="https://github.com/Cantara/PathWatcher">PathWatcher ↗</a>
+      <a href="https://wiki.cantara.no">Cantara</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById('themeBtn');
+    var root = document.documentElement;
+    function current() {
+      var set = root.getAttribute('data-theme');
+      if (set) return set;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    btn.addEventListener('click', function () {
+      var next = current() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('pw-theme', next); } catch (e) {}
+    });
+    try {
+      var saved = localStorage.getItem('pw-theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>
