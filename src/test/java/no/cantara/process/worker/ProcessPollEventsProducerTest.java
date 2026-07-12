@@ -33,6 +33,20 @@ public class ProcessPollEventsProducerTest {
     }
 
     @Test
+    public void testParseSnapshotDropsInjectedPhantomPid() {
+        long ownPid = ProcessHandle.current().pid();
+        // a hostile process embeds a newline + fake row in its argv; pid 999999 does not exist
+        String psOutput = ""
+                + "  " + ownPid + " app     /usr/bin/java -jar app.jar\n"
+                + "999999 root    /usr/bin/nc -l 4444\n";
+
+        Map<Long, ProcessDTO> snapshot = ProcessPollEventsProducer.parseSnapshot(psOutput);
+
+        assertTrue(snapshot.containsKey(ownPid), "The real process must be kept");
+        assertFalse(snapshot.containsKey(999999L), "The injected phantom pid must be dropped");
+    }
+
+    @Test
     public void testSnapshotProcessesWithPs() throws Exception {
         if (!FileSystemSupport.isLinux() && !FileSystemSupport.isMacOS()) {
             log.info("Skipping ps snapshot test on {}", FileSystemSupport.getOSString());
