@@ -6,8 +6,6 @@ import java.nio.file.FileSystems;
  * Created by ora on 10/20/16.
  */
 public class FileSystemSupport {
-    public static final String MACOS_LIB = "libsigar-universal64-macosx.dylib";
-    public static final String LINUX_LIB = "libsigar-amd64-linux.so";
 
     public static String getOSString() {
         return System.getProperties().get("os.name") + " " + System.getProperties().get("os.version");
@@ -29,10 +27,6 @@ public class FileSystemSupport {
         return (isMacOS() && "MacOSXFileSystem".equals(FileSystems.getDefault().getClass().getSimpleName()));
     }
 
-    public static boolean hasJDKEventDrivenFileSystem() {
-        return ((isLinuxFileSystem() || isWindowsFileSystem()) && !isMacOSFileSystem());
-    }
-
     public static boolean isWindows() {
         return getOSString().contains("Windows");
     }
@@ -41,17 +35,11 @@ public class FileSystemSupport {
         return (isWindows() && "WindowsFileSystem".equals(FileSystems.getDefault().getClass().getSimpleName()));
     }
 
-    public static String execCmd(String cmd) throws java.io.IOException {
-        Process proc = Runtime.getRuntime().exec(cmd);
-        java.io.InputStream is = proc.getInputStream();
-        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-        String val = "";
-        if (s.hasNext()) {
-            val = s.next();
-        } else {
-            val = "";
+    public static String execCmd(String... cmd) throws java.io.IOException {
+        Process proc = new ProcessBuilder(cmd).start();
+        try (java.util.Scanner s = new java.util.Scanner(proc.getInputStream()).useDelimiter("\\A")) {
+            return s.hasNext() ? s.next() : "";
         }
-        return val;
     }
 
 }

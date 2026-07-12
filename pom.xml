@@ -57,45 +57,21 @@
 
 
     <repositories>
-
-        <repository>
-            <id>osgeo-releases</id>
-            <name>osgeo Repository</name>
-            <url>http://download.osgeo.org/webdav/geotools/</url>
-        </repository>
-
         <!-- Needed for parent  -->
         <repository>
             <id>cantara-releases</id>
             <name>Cantara Release Repository</name>
-            <url>http://mvnrepo.cantara.no/content/repositories/releases/</url>
+            <url>https://mvnrepo.cantara.no/content/repositories/releases/</url>
         </repository>
         <!-- Needed for SDK snapshots  -->
         <repository>
             <id>cantara-snapshots</id>
             <name>Cantara Snapshot Repository</name>
-            <url>http://mvnrepo.cantara.no/content/repositories/snapshots/</url>
+            <url>https://mvnrepo.cantara.no/content/repositories/snapshots/</url>
         </repository>
     </repositories>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/org.fusesource/sigar -->
-        <dependency>
-            <groupId>org.fusesource</groupId>
-            <artifactId>sigar</artifactId>
-            <version>1.6.4</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
@@ -113,13 +89,6 @@
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
             <scope>provided</scope>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.13.0</version>
         </dependency>
 
         <dependency>
@@ -150,8 +119,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <release>17</release>
                 </configuration>
             </plugin>
             <plugin>

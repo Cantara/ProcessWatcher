@@ -5,4 +5,14 @@ public class DEFCON5 extends DefconEvent {
     public DEFCON5(ProcessDTO process) {
         super(process);
     }
+
+    @Override
+    public int getLevel() {
+        return 5;
+    }
+
+    @Override
+    public String getInformation() {
+        return "Normal readiness";
+    }
 }
