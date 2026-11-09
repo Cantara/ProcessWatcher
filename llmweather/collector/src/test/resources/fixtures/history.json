@@ -36,12 +36,12 @@
     "anthropic/claude-sonnet-5.5": {"id": "anthropic/claude-sonnet-5.5", "name": "Anthropic: Claude Sonnet 5.5", "created": 1759276800, "contextLength": 1000000, "promptPerMTok": 2.0, "completionPerMTok": 10.0},
     "anthropic/claude-haiku-5.5": {"id": "anthropic/claude-haiku-5.5", "name": "Anthropic: Claude Haiku 5.5", "created": 1759276800, "contextLength": 1000000, "promptPerMTok": 0.1, "completionPerMTok": 0.5},
     "google/gemini-3-pro": {"id": "google/gemini-3-pro", "name": "Google: Gemini 3 Pro", "created": 1761177600, "contextLength": 2000000, "promptPerMTok": 1.25, "completionPerMTok": 10.0},
-    "google/gemini-2.5-flash": {"id": "google/gemini-2.5-flash", "name": "Google: Gemini 2.5 Flash", "created": 1750118400, "contextLength": 1048576, "promptPerMTok": 0.3, "completionPerMTok": 2.5},
+    "google/gemini-2.5-flash": {"id": "google/gemini-2.5-flash", "name": "Google: Gemini 2.5 Flash", "created": 1750118400, "contextLength": 1048576, "promptPerMTok": 0.35, "completionPerMTok": 2.5},
     "mistralai/mistral-large-3": {"id": "mistralai/mistral-large-3", "name": "Mistral: Mistral Large 3", "created": 1760572800, "contextLength": 256000, "promptPerMTok": 2.0, "completionPerMTok": 6.0},
     "mistralai/mistral-small-latest": {"id": "mistralai/mistral-small-latest", "name": "Mistral: Mistral Small", "created": 1742169600, "contextLength": 128000, "promptPerMTok": 0.1, "completionPerMTok": 0.3},
-    "x-ai/grok-4": {"id": "x-ai/grok-4", "name": "xAI: Grok 4", "created": 1752105600, "contextLength": 256000, "promptPerMTok": 3.0, "completionPerMTok": 15.0},
-    "deepseek/deepseek-v4": {"id": "deepseek/deepseek-v4", "name": "DeepSeek: DeepSeek V4", "created": 1761609600, "contextLength": 163840, "promptPerMTok": 0.27, "completionPerMTok": 1.1},
-    "meta-llama/llama-4-maverick": {"id": "meta-llama/llama-4-maverick", "name": "Meta: Llama 4 Maverick", "created": 1743984000, "contextLength": 1048576, "promptPerMTok": 0.15, "completionPerMTok": 0.6},
+    "x-ai/grok-4": {"id": "x-ai/grok-4", "name": "xAI: Grok 4", "created": 1752105600, "contextLength": 256000, "promptPerMTok": 3.0, "completionPerMTok": 13.0},
+    "deepseek/deepseek-v4": {"id": "deepseek/deepseek-v4", "name": "DeepSeek: DeepSeek V4", "created": 1761609600, "contextLength": 163840, "promptPerMTok": 0.24, "completionPerMTok": 1.1},
+    "meta-llama/llama-4-maverick": {"id": "meta-llama/llama-4-maverick", "name": "Meta: Llama 4 Maverick", "created": 1743984000, "contextLength": 1048576, "promptPerMTok": 0.2, "completionPerMTok": 0.8},
     "cohere/command-a": {"id": "cohere/command-a", "name": "Cohere: Command A", "created": 1741824000, "contextLength": 256000, "promptPerMTok": 2.5, "completionPerMTok": 10.0}
   },
   "updatedAt": "2026-11-09T06:00:00Z"

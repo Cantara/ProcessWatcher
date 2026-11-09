@@ -3,7 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import Hero from './components/Hero.vue'
 import AlertBanner from './components/AlertBanner.vue'
 import ProviderCard from './components/ProviderCard.vue'
-import FrontsList from './components/FrontsList.vue'
+import WeatherMap from './components/WeatherMap.vue'
+import PriceFrontChart from './components/PriceFrontChart.vue'
 import Outlook from './components/Outlook.vue'
 import ModelTable from './components/ModelTable.vue'
 import SourcesFooter from './components/SourcesFooter.vue'
@@ -53,6 +54,7 @@ onMounted(async () => {
         <span>LLMWeather</span>
       </a>
       <nav class="links">
+        <a href="#map">Map</a>
         <a href="#stations">Stations</a>
         <a href="#fronts">Fronts</a>
         <a href="#models">Models</a>
@@ -73,6 +75,14 @@ onMounted(async () => {
       <Hero :forecast="forecast" :reporting="reporting.length" :total="stations.length" />
       <AlertBanner :alerts="forecast.alerts" />
 
+      <section id="map" class="section">
+        <div class="section-head">
+          <h2>Weather map</h2>
+          <span class="hint">Hourly conditions across the market, last 48 hours</span>
+        </div>
+        <WeatherMap :stations="stations" :generated-at="forecast.generatedAt" />
+      </section>
+
       <section id="stations" class="section">
         <div class="section-head">
           <h2>Weather stations</h2>
@@ -89,7 +99,7 @@ onMounted(async () => {
             <h2>Fronts</h2>
             <span class="hint">Changes since the previous observation</span>
           </div>
-          <FrontsList :fronts="forecast.fronts" />
+          <PriceFrontChart :fronts="forecast.fronts" />
         </div>
         <div>
           <div class="section-head">

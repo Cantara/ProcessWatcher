@@ -1,7 +1,7 @@
 {
-  "generatedAt" : "2026-11-09T05:53:38.845767318Z",
+  "generatedAt" : "2026-11-09T06:28:16.240445816Z",
   "headline" : "Storms over Mistral, showers over Cohere",
-  "bulletin" : "Severe weather warning in effect. Thunderstorms are hitting at least one major provider and applications depending on it should expect errors and retries.\n\nOpenAI: a few clouds (partially degraded service), elevated error rates on the responses api is monitoring. Mistral: thunderstorms (major system outage), api unavailable in eu region is identified. Cohere: rain (partial system outage), increased latency on command models is investigating.\n\nHigh pressure building over Anthropic as conditions improve. Pressure falling over OpenAI and Mistral; conditions have worsened since yesterday.\n\nFronts moving through: OpenAI cut GPT-5.2 (input down 30% to $1.75/M, output down 30% to $14.00/M); OpenAI delisted GPT-4.1; Anthropic listed Claude Opus 5.5.\n\nNo observations from Google, xAI and Meta Llama: those stations have no public status page and no probe configured.",
+  "bulletin" : "Severe weather warning in effect. Thunderstorms are hitting at least one major provider and applications depending on it should expect errors and retries.\n\nOpenAI: a few clouds (partially degraded service), elevated error rates on the responses api is monitoring. Mistral: thunderstorms (major system outage), api unavailable in eu region is identified. Cohere: rain (partial system outage), increased latency on command models is investigating.\n\nHigh pressure building over Anthropic as conditions improve. Pressure falling over OpenAI and Mistral; conditions have worsened since yesterday.\n\nFronts moving through: OpenAI cut GPT-5.2 (input down 30% to $1.75/M, output down 30% to $14.00/M); Meta Llama cut Llama 4 Maverick (input down 25% to $0.15/M, output down 25% to $0.6/M); xAI raised Grok 4 (output up 15% to $15.00/M) and 4 more on the fronts map.\n\nNo observations from Google, xAI and Meta Llama: those stations have no public status page and no probe configured.",
   "bulletinAuthor" : "rules",
   "severity" : "stormy",
   "alerts" : [ {
@@ -90,7 +90,7 @@
       "condition" : "RAIN",
       "latencyMs" : 4100
     }, {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "PARTLY_CLOUDY"
     } ]
   }, {
@@ -158,7 +158,7 @@
       "condition" : "SUNNY",
       "latencyMs" : 650
     }, {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "SUNNY"
     } ]
   }, {
@@ -186,7 +186,7 @@
       "completionPerMTok" : 2.5
     } ],
     "history" : [ {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "UNKNOWN"
     } ]
   }, {
@@ -243,7 +243,7 @@
       "condition" : "SUNNY",
       "latencyMs" : 590
     }, {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "STORM"
     } ]
   }, {
@@ -265,7 +265,7 @@
       "completionPerMTok" : 15.0
     } ],
     "history" : [ {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "UNKNOWN"
     } ]
   }, {
@@ -296,7 +296,7 @@
       "condition" : "SUNNY",
       "latencyMs" : 2100
     }, {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "SUNNY"
     } ]
   }, {
@@ -317,7 +317,7 @@
       "completionPerMTok" : 0.6
     } ],
     "history" : [ {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "UNKNOWN"
     } ]
   }, {
@@ -351,7 +351,7 @@
       "completionPerMTok" : 10.0
     } ],
     "history" : [ {
-      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "ts" : "2026-11-09T06:28:16.240445816Z",
       "condition" : "RAIN"
     } ]
   } ],
@@ -361,6 +361,30 @@
     "model" : "GPT-5.2",
     "detail" : "input down 30% to $1.75/M, output down 30% to $14.00/M",
     "magnitude" : -0.3
+  }, {
+    "type" : "price-drop",
+    "provider" : "Meta Llama",
+    "model" : "Llama 4 Maverick",
+    "detail" : "input down 25% to $0.15/M, output down 25% to $0.6/M",
+    "magnitude" : -0.25000000000000006
+  }, {
+    "type" : "price-rise",
+    "provider" : "xAI",
+    "model" : "Grok 4",
+    "detail" : "output up 15% to $15.00/M",
+    "magnitude" : 0.15384615384615385
+  }, {
+    "type" : "price-drop",
+    "provider" : "Google",
+    "model" : "Gemini 2.5 Flash",
+    "detail" : "input down 14% to $0.3/M",
+    "magnitude" : -0.14285714285714282
+  }, {
+    "type" : "price-rise",
+    "provider" : "DeepSeek",
+    "model" : "DeepSeek V4",
+    "detail" : "input up 13% to $0.27/M",
+    "magnitude" : 0.1250000000000001
   }, {
     "type" : "deprecation",
     "provider" : "OpenAI",
@@ -379,7 +403,7 @@
     "text" : "Scheduled maintenance ahead: Anthropic: Console database maintenance. 3 incidents still open; expect intermittent showers until providers post the all-clear."
   }, {
     "label" : "The week ahead",
-    "text" : "A cold front of price cuts is moving through (1 model). 1 new model has appeared on the chart."
+    "text" : "A cold front of price cuts is moving through (3 models). Warm air aloft: 2 price increases. 1 new model has appeared on the chart."
   } ],
   "sources" : [ {
     "source" : "OpenAI status page",
