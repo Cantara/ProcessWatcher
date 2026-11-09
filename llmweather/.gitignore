@@ -1,0 +1,4 @@
+.history/
+collector/target/
+site/node_modules/
+site/dist/

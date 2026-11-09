@@ -94,3 +94,9 @@ and covered by tests. Feedback and collaboration is still very much wanted :)
 #### A simple diagram showing the two phases and the event flows
 
 ![ProcessWatcher event flow](https://raw.githubusercontent.com/Cantara/ProcessWatcher/master/docs/ProcessWatcherPhasesSequences.png)
+
+### Sideloaded: LLMWeather
+
+The [`llmweather/`](llmweather/) folder holds **LLMWeather**, a weather-report style site for the LLM market
+(provider outages, latency, price fronts and outlook). It is an independent project temporarily hosted here and
+laid out as its own repository root; it will move to `Cantara/LLMWeather`. See [llmweather/README.md](llmweather/README.md).

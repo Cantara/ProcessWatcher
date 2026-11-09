@@ -1,0 +1,20 @@
+{
+  "page": {"id": "mistral", "name": "Mistral AI", "url": "https://status.mistral.ai", "time_zone": "Europe/Paris", "updated_at": "2026-11-09T16:48:00.000+01:00"},
+  "components": [{"id": "m1", "name": "La Plateforme API", "status": "major_outage"}],
+  "incidents": [
+    {
+      "id": "inc-mistral-1",
+      "name": "API unavailable in EU region",
+      "status": "identified",
+      "impact": "critical",
+      "created_at": "2026-11-09T15:12:00.000+01:00",
+      "updated_at": "2026-11-09T16:40:00.000+01:00",
+      "shortlink": "https://stspg.io/example-mistral-1",
+      "incident_updates": [
+        {"body": "The issue has been identified and a fix is being rolled out.", "created_at": "2026-11-09T16:40:00.000+01:00"}
+      ]
+    }
+  ],
+  "scheduled_maintenances": [],
+  "status": {"indicator": "critical", "description": "Major System Outage"}
+}

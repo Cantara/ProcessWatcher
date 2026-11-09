@@ -1,0 +1,43 @@
+entity:
+  name: LLMWeather
+  type: open-source-service
+  description: >
+    A weather-report style site for the LLM market: provider outages, API latency,
+    price fronts and an outlook, collected hourly and published as a static site.
+
+authority:
+  owner: Cantara — Norwegian Software Development Foundation
+  repo: https://github.com/Cantara/LLMWeather
+  license: Apache-2.0
+  org_manifest: https://wiki.cantara.no/knowledge.yaml
+
+discovery:
+  provenance: canonical
+  confidence: low
+  staleness_days: 30
+
+kcp_version: "0.26"
+project: LLMWeather
+language: en
+license: "Apache-2.0"
+runtime: Java, Node
+indexing: open
+updated: "2026-11-09"
+
+units:
+
+  - id: readme
+    path: README.md
+    intent: "What is LLMWeather, where does the data come from, how do I run and deploy it?"
+    scope: global
+    audience: [human, agent, developer]
+    validated: "2026-11-09"
+    triggers: [overview, llm weather, forecast, status, pricing, getting started]
+
+  - id: forecast-schema
+    path: docs/forecast-schema.md
+    intent: "What fields does forecast.json contain and how are conditions, pressure and fronts derived?"
+    scope: data
+    audience: [agent, developer]
+    validated: "2026-11-09"
+    triggers: [schema, forecast.json, condition, pressure, fronts, rules]

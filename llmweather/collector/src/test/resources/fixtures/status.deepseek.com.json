@@ -1,0 +1,7 @@
+{
+  "page": {"id": "deepseek", "name": "DeepSeek", "url": "https://status.deepseek.com", "time_zone": "Asia/Shanghai", "updated_at": "2026-11-09T23:50:00.000+08:00"},
+  "components": [{"id": "d1", "name": "API", "status": "operational"}],
+  "incidents": [],
+  "scheduled_maintenances": [],
+  "status": {"indicator": "none", "description": "All Systems Operational"}
+}

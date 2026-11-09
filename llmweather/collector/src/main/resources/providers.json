@@ -1,0 +1,58 @@
+[
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "statusPage": "https://status.openai.com",
+    "openRouterPrefix": "openai",
+    "probe": { "type": "openai", "url": "https://api.openai.com/v1/chat/completions", "model": "gpt-4o-mini", "apiKeyEnv": "OPENAI_API_KEY" }
+  },
+  {
+    "id": "anthropic",
+    "name": "Anthropic",
+    "statusPage": "https://status.claude.com",
+    "openRouterPrefix": "anthropic",
+    "probe": { "type": "anthropic", "url": "https://api.anthropic.com/v1/messages", "model": "claude-haiku-5-5", "apiKeyEnv": "ANTHROPIC_API_KEY" }
+  },
+  {
+    "id": "google",
+    "name": "Google",
+    "statusPage": null,
+    "openRouterPrefix": "google",
+    "probe": { "type": "openai", "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "model": "gemini-2.5-flash", "apiKeyEnv": "GEMINI_API_KEY" }
+  },
+  {
+    "id": "mistral",
+    "name": "Mistral",
+    "statusPage": "https://status.mistral.ai",
+    "openRouterPrefix": "mistralai",
+    "probe": { "type": "openai", "url": "https://api.mistral.ai/v1/chat/completions", "model": "mistral-small-latest", "apiKeyEnv": "MISTRAL_API_KEY" }
+  },
+  {
+    "id": "xai",
+    "name": "xAI",
+    "statusPage": "https://status.x.ai",
+    "openRouterPrefix": "x-ai",
+    "probe": { "type": "openai", "url": "https://api.x.ai/v1/chat/completions", "model": "grok-3-mini", "apiKeyEnv": "XAI_API_KEY" }
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "statusPage": "https://status.deepseek.com",
+    "openRouterPrefix": "deepseek",
+    "probe": { "type": "openai", "url": "https://api.deepseek.com/chat/completions", "model": "deepseek-chat", "apiKeyEnv": "DEEPSEEK_API_KEY" }
+  },
+  {
+    "id": "meta",
+    "name": "Meta Llama",
+    "statusPage": null,
+    "openRouterPrefix": "meta-llama",
+    "probe": null
+  },
+  {
+    "id": "cohere",
+    "name": "Cohere",
+    "statusPage": "https://status.cohere.com",
+    "openRouterPrefix": "cohere",
+    "probe": { "type": "openai", "url": "https://api.cohere.ai/compatibility/v1/chat/completions", "model": "command-r7b-12-2024", "apiKeyEnv": "COHERE_API_KEY" }
+  }
+]

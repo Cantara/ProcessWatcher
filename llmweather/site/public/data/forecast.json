@@ -1,0 +1,413 @@
+{
+  "generatedAt" : "2026-11-09T05:53:38.845767318Z",
+  "headline" : "Storms over Mistral, showers over Cohere",
+  "bulletin" : "Severe weather warning in effect. Thunderstorms are hitting at least one major provider and applications depending on it should expect errors and retries.\n\nOpenAI: a few clouds (partially degraded service), elevated error rates on the responses api is monitoring. Mistral: thunderstorms (major system outage), api unavailable in eu region is identified. Cohere: rain (partial system outage), increased latency on command models is investigating.\n\nHigh pressure building over Anthropic as conditions improve. Pressure falling over OpenAI and Mistral; conditions have worsened since yesterday.\n\nFronts moving through: OpenAI cut GPT-5.2 (input down 30% to $1.75/M, output down 30% to $14.00/M); OpenAI delisted GPT-4.1; Anthropic listed Claude Opus 5.5.\n\nNo observations from Google, xAI and Meta Llama: those stations have no public status page and no probe configured.",
+  "bulletinAuthor" : "rules",
+  "severity" : "stormy",
+  "alerts" : [ {
+    "provider" : "Mistral",
+    "level" : "severe",
+    "title" : "API unavailable in EU region",
+    "since" : "2026-11-09T14:12:00Z",
+    "url" : "https://stspg.io/example-mistral-1"
+  }, {
+    "provider" : "Cohere",
+    "level" : "warning",
+    "title" : "Increased latency on Command models",
+    "since" : "2026-11-09T15:05:00Z",
+    "url" : "https://stspg.io/example-cohere-1"
+  } ],
+  "providers" : [ {
+    "id" : "openai",
+    "name" : "OpenAI",
+    "statusUrl" : "https://status.openai.com",
+    "condition" : "PARTLY_CLOUDY",
+    "statusIndicator" : "minor",
+    "statusDescription" : "Partially Degraded Service",
+    "incidents" : [ {
+      "id" : "inc-openai-1",
+      "name" : "Elevated error rates on the Responses API",
+      "status" : "monitoring",
+      "impact" : "minor",
+      "createdAt" : "2026-11-09T13:40:00Z",
+      "updatedAt" : "2026-11-09T15:30:00Z",
+      "url" : "https://stspg.io/example-openai-1",
+      "latestUpdate" : "A fix has been implemented and we are monitoring the results.",
+      "active" : true,
+      "majorOrWorse" : false
+    } ],
+    "maintenances" : [ ],
+    "pressure" : "FALLING",
+    "pressureNote" : "Deteriorating over the last 24 hours",
+    "models" : [ {
+      "id" : "openai/gpt-5.2",
+      "name" : "OpenAI: GPT-5.2",
+      "created" : 1761955200,
+      "contextLength" : 400000,
+      "promptPerMTok" : 1.75,
+      "completionPerMTok" : 14.0
+    }, {
+      "id" : "openai/gpt-5-mini",
+      "name" : "OpenAI: GPT-5 Mini",
+      "created" : 1754524800,
+      "contextLength" : 400000,
+      "promptPerMTok" : 0.25,
+      "completionPerMTok" : 2.0
+    }, {
+      "id" : "openai/gpt-4o-mini",
+      "name" : "OpenAI: GPT-4o Mini",
+      "created" : 1721260800,
+      "contextLength" : 128000,
+      "promptPerMTok" : 0.15,
+      "completionPerMTok" : 0.6
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-08T10:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 820
+    }, {
+      "ts" : "2026-11-08T14:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 790
+    }, {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 910
+    }, {
+      "ts" : "2026-11-08T22:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 860
+    }, {
+      "ts" : "2026-11-09T02:00:00Z",
+      "condition" : "PARTLY_CLOUDY",
+      "latencyMs" : 1400
+    }, {
+      "ts" : "2026-11-09T04:00:00Z",
+      "condition" : "CLOUDY",
+      "latencyMs" : 2300
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "RAIN",
+      "latencyMs" : 4100
+    }, {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "PARTLY_CLOUDY"
+    } ]
+  }, {
+    "id" : "anthropic",
+    "name" : "Anthropic",
+    "statusUrl" : "https://status.claude.com",
+    "condition" : "SUNNY",
+    "statusIndicator" : "none",
+    "statusDescription" : "All Systems Operational",
+    "incidents" : [ ],
+    "maintenances" : [ {
+      "id" : "mnt-anthropic-1",
+      "name" : "Console database maintenance",
+      "status" : "scheduled",
+      "scheduledFor" : "2026-11-10T03:00:00Z",
+      "scheduledUntil" : "2026-11-10T04:00:00Z",
+      "url" : "https://stspg.io/example-anthropic-m1"
+    } ],
+    "pressure" : "RISING",
+    "pressureNote" : "Improving over the last 24 hours",
+    "models" : [ {
+      "id" : "anthropic/claude-opus-5.5",
+      "name" : "Anthropic: Claude Opus 5.5",
+      "created" : 1762128000,
+      "contextLength" : 1000000,
+      "promptPerMTok" : 4.0,
+      "completionPerMTok" : 20.0
+    }, {
+      "id" : "anthropic/claude-sonnet-5.5",
+      "name" : "Anthropic: Claude Sonnet 5.5",
+      "created" : 1759276800,
+      "contextLength" : 1000000,
+      "promptPerMTok" : 2.0,
+      "completionPerMTok" : 10.0
+    }, {
+      "id" : "anthropic/claude-haiku-5.5",
+      "name" : "Anthropic: Claude Haiku 5.5",
+      "created" : 1759276800,
+      "contextLength" : 1000000,
+      "promptPerMTok" : 0.1,
+      "completionPerMTok" : 0.5
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-08T10:00:00Z",
+      "condition" : "RAIN",
+      "latencyMs" : 3200
+    }, {
+      "ts" : "2026-11-08T14:00:00Z",
+      "condition" : "RAIN",
+      "latencyMs" : 2900
+    }, {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "CLOUDY",
+      "latencyMs" : 1500
+    }, {
+      "ts" : "2026-11-08T22:00:00Z",
+      "condition" : "PARTLY_CLOUDY",
+      "latencyMs" : 1100
+    }, {
+      "ts" : "2026-11-09T02:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 700
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 650
+    }, {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "SUNNY"
+    } ]
+  }, {
+    "id" : "google",
+    "name" : "Google",
+    "condition" : "UNKNOWN",
+    "statusDescription" : "No weather station",
+    "incidents" : [ ],
+    "maintenances" : [ ],
+    "pressure" : "STEADY",
+    "pressureNote" : "Stable over the last 24 hours",
+    "models" : [ {
+      "id" : "google/gemini-3-pro",
+      "name" : "Google: Gemini 3 Pro",
+      "created" : 1761177600,
+      "contextLength" : 2000000,
+      "promptPerMTok" : 1.25,
+      "completionPerMTok" : 10.0
+    }, {
+      "id" : "google/gemini-2.5-flash",
+      "name" : "Google: Gemini 2.5 Flash",
+      "created" : 1750118400,
+      "contextLength" : 1048576,
+      "promptPerMTok" : 0.3,
+      "completionPerMTok" : 2.5
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "UNKNOWN"
+    } ]
+  }, {
+    "id" : "mistral",
+    "name" : "Mistral",
+    "statusUrl" : "https://status.mistral.ai",
+    "condition" : "STORM",
+    "statusIndicator" : "critical",
+    "statusDescription" : "Major System Outage",
+    "incidents" : [ {
+      "id" : "inc-mistral-1",
+      "name" : "API unavailable in EU region",
+      "status" : "identified",
+      "impact" : "critical",
+      "createdAt" : "2026-11-09T14:12:00Z",
+      "updatedAt" : "2026-11-09T15:40:00Z",
+      "url" : "https://stspg.io/example-mistral-1",
+      "latestUpdate" : "The issue has been identified and a fix is being rolled out.",
+      "active" : true,
+      "majorOrWorse" : true
+    } ],
+    "maintenances" : [ ],
+    "pressure" : "FALLING",
+    "pressureNote" : "Deteriorating over the last 24 hours",
+    "models" : [ {
+      "id" : "mistralai/mistral-large-3",
+      "name" : "Mistral: Mistral Large 3",
+      "created" : 1760572800,
+      "contextLength" : 256000,
+      "promptPerMTok" : 2.0,
+      "completionPerMTok" : 6.0
+    }, {
+      "id" : "mistralai/mistral-small-latest",
+      "name" : "Mistral: Mistral Small",
+      "created" : 1742169600,
+      "contextLength" : 128000,
+      "promptPerMTok" : 0.1,
+      "completionPerMTok" : 0.3
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-08T10:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 600
+    }, {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 640
+    }, {
+      "ts" : "2026-11-09T02:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 610
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 590
+    }, {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "STORM"
+    } ]
+  }, {
+    "id" : "xai",
+    "name" : "xAI",
+    "statusUrl" : "https://status.x.ai",
+    "condition" : "UNKNOWN",
+    "statusDescription" : "No weather station",
+    "incidents" : [ ],
+    "maintenances" : [ ],
+    "pressure" : "STEADY",
+    "pressureNote" : "Stable over the last 24 hours",
+    "models" : [ {
+      "id" : "x-ai/grok-4",
+      "name" : "xAI: Grok 4",
+      "created" : 1752105600,
+      "contextLength" : 256000,
+      "promptPerMTok" : 3.0,
+      "completionPerMTok" : 15.0
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "UNKNOWN"
+    } ]
+  }, {
+    "id" : "deepseek",
+    "name" : "DeepSeek",
+    "statusUrl" : "https://status.deepseek.com",
+    "condition" : "SUNNY",
+    "statusIndicator" : "none",
+    "statusDescription" : "All Systems Operational",
+    "incidents" : [ ],
+    "maintenances" : [ ],
+    "pressure" : "STEADY",
+    "pressureNote" : "Stable over the last 24 hours",
+    "models" : [ {
+      "id" : "deepseek/deepseek-v4",
+      "name" : "DeepSeek: DeepSeek V4",
+      "created" : 1761609600,
+      "contextLength" : 163840,
+      "promptPerMTok" : 0.27,
+      "completionPerMTok" : 1.1
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 1900
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 2100
+    }, {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "SUNNY"
+    } ]
+  }, {
+    "id" : "meta",
+    "name" : "Meta Llama",
+    "condition" : "UNKNOWN",
+    "statusDescription" : "No weather station",
+    "incidents" : [ ],
+    "maintenances" : [ ],
+    "pressure" : "STEADY",
+    "pressureNote" : "Stable over the last 24 hours",
+    "models" : [ {
+      "id" : "meta-llama/llama-4-maverick",
+      "name" : "Meta: Llama 4 Maverick",
+      "created" : 1743984000,
+      "contextLength" : 1048576,
+      "promptPerMTok" : 0.15,
+      "completionPerMTok" : 0.6
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "UNKNOWN"
+    } ]
+  }, {
+    "id" : "cohere",
+    "name" : "Cohere",
+    "statusUrl" : "https://status.cohere.com",
+    "condition" : "RAIN",
+    "statusIndicator" : "major",
+    "statusDescription" : "Partial System Outage",
+    "incidents" : [ {
+      "id" : "inc-cohere-1",
+      "name" : "Increased latency on Command models",
+      "status" : "investigating",
+      "impact" : "major",
+      "createdAt" : "2026-11-09T15:05:00Z",
+      "updatedAt" : "2026-11-09T15:45:00Z",
+      "url" : "https://stspg.io/example-cohere-1",
+      "latestUpdate" : "We are investigating increased latency.",
+      "active" : true,
+      "majorOrWorse" : true
+    } ],
+    "maintenances" : [ ],
+    "pressure" : "STEADY",
+    "pressureNote" : "Stable over the last 24 hours",
+    "models" : [ {
+      "id" : "cohere/command-a",
+      "name" : "Cohere: Command A",
+      "created" : 1741824000,
+      "contextLength" : 256000,
+      "promptPerMTok" : 2.5,
+      "completionPerMTok" : 10.0
+    } ],
+    "history" : [ {
+      "ts" : "2026-11-09T05:53:38.845767318Z",
+      "condition" : "RAIN"
+    } ]
+  } ],
+  "fronts" : [ {
+    "type" : "price-drop",
+    "provider" : "OpenAI",
+    "model" : "GPT-5.2",
+    "detail" : "input down 30% to $1.75/M, output down 30% to $14.00/M",
+    "magnitude" : -0.3
+  }, {
+    "type" : "deprecation",
+    "provider" : "OpenAI",
+    "model" : "GPT-4.1",
+    "detail" : "No longer listed on OpenRouter",
+    "magnitude" : 0.0
+  }, {
+    "type" : "new-model",
+    "provider" : "Anthropic",
+    "model" : "Claude Opus 5.5",
+    "detail" : "New model listed, 1M context",
+    "magnitude" : 0.0
+  } ],
+  "outlook" : [ {
+    "label" : "Next 24 hours",
+    "text" : "Scheduled maintenance ahead: Anthropic: Console database maintenance. 3 incidents still open; expect intermittent showers until providers post the all-clear."
+  }, {
+    "label" : "The week ahead",
+    "text" : "A cold front of price cuts is moving through (1 model). 1 new model has appeared on the chart."
+  } ],
+  "sources" : [ {
+    "source" : "OpenAI status page",
+    "ok" : true,
+    "detail" : "https://status.openai.com"
+  }, {
+    "source" : "Anthropic status page",
+    "ok" : true,
+    "detail" : "https://status.claude.com"
+  }, {
+    "source" : "Mistral status page",
+    "ok" : true,
+    "detail" : "https://status.mistral.ai"
+  }, {
+    "source" : "xAI status page",
+    "ok" : false,
+    "detail" : "No fixture status.x.ai.json for https://status.x.ai/api/v2/summary.json"
+  }, {
+    "source" : "DeepSeek status page",
+    "ok" : true,
+    "detail" : "https://status.deepseek.com"
+  }, {
+    "source" : "Cohere status page",
+    "ok" : true,
+    "detail" : "https://status.cohere.com"
+  }, {
+    "source" : "OpenRouter model list",
+    "ok" : true,
+    "detail" : "15 models"
+  } ]
+}
