@@ -12,6 +12,11 @@ Status pages are instruments. This is the forecaster standing in front of the ma
 
 ## What it shows
 
+* **Sky chart**: the opening shot. One constellation per provider, one star per model sized by price
+  tier, with tonight's weather drawn over it: drifting volumetric clouds, rain, lightning that lights the
+  cloud from inside, and a shooting star for every newly listed model. All motion is disabled when the
+  visitor prefers reduced motion.
+* **Weather map**: one row per provider, one cell per hour for the last 48 hours.
 * **Headline and bulletin**: a plain-language report generated from the observations. With an Anthropic
   key configured, Claude rewrites the bulletin as a proper weather presenter would; the facts always come
   from the recorded data, never from the model.
@@ -22,6 +27,8 @@ Status pages are instruments. This is the forecaster standing in front of the ma
 * **Model chart**: every listed model with context length and prices per million tokens, filterable
   and sortable.
 * **Instruments**: which data sources answered, so a quiet map is never mistaken for a sunny one.
+
+The site is an installable PWA: add it to a phone home screen and the last forecast opens offline.
 
 The whole forecast is also available as machine-readable JSON, see [docs/forecast-schema.md](docs/forecast-schema.md).
 
