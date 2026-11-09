@@ -3,7 +3,6 @@ package no.cantara.process.event;
 import no.cantara.process.support.FingerprintStore;
 import no.cantara.process.util.ListeningSocketSupport;
 
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -200,7 +199,10 @@ public abstract class DefconEvent {
         if (process.getCommand().isEmpty()) {
             return false;
         }
-        String baseName = Paths.get(process.getCommand()).getFileName().toString();
+        // plain string handling: Paths.get would throw on commands with characters the
+        // file system rejects, and a hostile command line is exactly what we are grading
+        String command = process.getCommand();
+        String baseName = command.substring(command.lastIndexOf('/') + 1);
         return PROBE_TOOLS.contains(baseName);
     }
 

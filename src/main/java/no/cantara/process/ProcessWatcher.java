@@ -4,9 +4,6 @@ import com.google.common.collect.Sets;
 import com.google.common.eventbus.DeadEvent;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import no.cantara.process.event.ProcessWatchEvent;
 import no.cantara.process.event.ProcessWatcherInternalEvent;
 import no.cantara.process.support.FingerprintStore;
@@ -23,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -95,7 +93,7 @@ public class ProcessWatcher {
 
     private ProcessWatchScanner processWatchScannerMode;
 
-    private boolean running;
+    private volatile boolean running;
 
     private ProcessWatcher() {
         processWatchScannerMode = ProcessWatchScanner.NATIVE_PROCESS_API;
@@ -316,19 +314,63 @@ public class ProcessWatcher {
         return isTerminated;
     }
 
+    /**
+     * @return the effective configuration as a small JSON document, for logging and diagnostics
+     */
     public String getConfigInfo() {
-        JsonObject json = new JsonObject();
-        json.addProperty("processWatchScannerMode", processWatchScannerMode.toString());
-        json.addProperty("scanProcessInterval", SCAN_PROCESS_INTERVAL);
-        json.addProperty("fingerprintingPeriod", FINGERPRINTING_PERIOD);
-        json.addProperty("whitelist", whitelistPatterns.toString());
-        json.addProperty("commandLineWhitelist", commandLineWhitelistPatterns.toString());
-        json.addProperty("suspiciousEscalationDelay", SUSPICIOUS_ESCALATION_DELAY);
-        json.addProperty("fingerprintBaselineFile", String.valueOf(fingerprintBaselineFile));
-        json.addProperty("workerShutdownTimeout", WORKER_SHUTDOWN_TIMEOUT);
+        StringBuilder json = new StringBuilder("{\n");
+        appendJson(json, "processWatchScannerMode", processWatchScannerMode.toString(), true);
+        appendJson(json, "scanProcessInterval", SCAN_PROCESS_INTERVAL, true);
+        appendJson(json, "fingerprintingPeriod", FINGERPRINTING_PERIOD, true);
+        appendJson(json, "whitelist", whitelistPatterns, true);
+        appendJson(json, "commandLineWhitelist", commandLineWhitelistPatterns, true);
+        appendJson(json, "extraInterpreters", extraInterpreters, true);
+        appendJson(json, "suspiciousEscalationDelay", SUSPICIOUS_ESCALATION_DELAY, true);
+        appendJson(json, "fingerprintBaselineFile", fingerprintBaselineFile == null ? null : fingerprintBaselineFile.toString(), true);
+        appendJson(json, "workerShutdownTimeout", WORKER_SHUTDOWN_TIMEOUT, false);
+        return json.append("}").toString();
+    }
 
-        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-        return gson.toJson(json);
+    private static void appendJson(StringBuilder json, String key, Object value, boolean more) {
+        json.append("  \"").append(key).append("\": ");
+        if (value == null) {
+            json.append("null");
+        } else if (value instanceof Number) {
+            json.append(value);
+        } else if (value instanceof Collection) {
+            json.append('[');
+            boolean first = true;
+            for (Object item : (Collection<?>) value) {
+                json.append(first ? "" : ", ").append('"').append(escapeJson(String.valueOf(item))).append('"');
+                first = false;
+            }
+            json.append(']');
+        } else {
+            json.append('"').append(escapeJson(String.valueOf(value))).append('"');
+        }
+        json.append(more ? ",\n" : "\n");
+    }
+
+    static String escapeJson(String value) {
+        StringBuilder out = new StringBuilder(value.length() + 8);
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '"' -> out.append("\\\"");
+                case '\\' -> out.append("\\\\");
+                case '\n' -> out.append("\\n");
+                case '\r' -> out.append("\\r");
+                case '\t' -> out.append("\\t");
+                default -> {
+                    if (c < 0x20) {
+                        out.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        out.append(c);
+                    }
+                }
+            }
+        }
+        return out.toString();
     }
 
     public void start() {
@@ -350,6 +392,11 @@ public class ProcessWatcher {
         }
     }
 
+    /**
+     * Stops the workers, persists the baseline if a baseline file is configured, and resets
+     * the watcher to its initial configuration: handlers, whitelists, extra interpreters and
+     * the baseline file are cleared so the singleton can be reconfigured before the next start().
+     */
     public void stop() {
         if (isRunning()) {
             processProducerWorker.shutdown();
@@ -363,6 +410,7 @@ public class ProcessWatcher {
             suspiciousHandler.clear();
             whitelistPatterns.clear();
             commandLineWhitelistPatterns.clear();
+            extraInterpreters.clear();
             fingerprintBaselineFile = null;
             getProcessWorkerMap().clear();
             processWorkerMap = null;
