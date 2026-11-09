@@ -28,8 +28,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', update))
 
 const W = computed(() => (narrow.value ? 600 : 1200))
-const H = computed(() => (narrow.value ? 760 : 430))
-const cols = computed(() => (narrow.value ? 2 : 4))
+const H = computed(() => (narrow.value ? 820 : 470))
 const moon = computed(() => (narrow.value ? { x: 300, y: 30, r: 13 } : { x: 600, y: 34, r: 16 }))
 
 const background = computed(() => {
@@ -107,15 +106,47 @@ function rainDrops(c) {
   })
 }
 
+// Scatter the constellations like a real chart: every provider gets a seeded position, then the
+// positions are relaxed apart until no two overlap and all keep clear of the moon and the edges.
+// Deterministic for a given provider list, so the sky is stable between builds.
+function layout(stations) {
+  const margin = { x: narrow.value ? 80 : 100, top: 78, bottom: 96 }
+  const minD = narrow.value ? 180 : 235
+  const pts = stations.map(s => {
+    const r = rng(hash('pos-' + s.id))
+    return { x: margin.x + r() * (W.value - 2 * margin.x), y: margin.top + r() * (H.value - margin.top - margin.bottom) }
+  })
+  const obstacles = [{ x: moon.value.x, y: moon.value.y, d: 150 }]
+  for (let iter = 0; iter < 120; iter++) {
+    let moved = 0
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[j].x - pts[i].x, dy = (pts[j].y - pts[i].y) * 1.35 // labels make footprints taller than wide
+        const d = Math.hypot(dx, dy) || 0.01
+        if (d < minD) {
+          const push = (minD - d) / 2 / d
+          pts[i].x -= dx * push; pts[i].y -= dy * push / 1.35
+          pts[j].x += dx * push; pts[j].y += dy * push / 1.35
+          moved++
+        }
+      }
+      for (const o of obstacles) {
+        const dx = pts[i].x - o.x, dy = pts[i].y - o.y
+        const d = Math.hypot(dx, dy) || 0.01
+        if (d < o.d) { pts[i].x += dx * (o.d - d) / d; pts[i].y += dy * (o.d - d) / d; moved++ }
+      }
+      pts[i].x = Math.min(W.value - margin.x, Math.max(margin.x, pts[i].x))
+      pts[i].y = Math.min(H.value - margin.bottom, Math.max(margin.top, pts[i].y))
+    }
+    if (!moved) break
+  }
+  return pts
+}
+
 const constellations = computed(() => {
-  const n = props.stations.length
-  const rows = Math.max(1, Math.ceil(n / cols.value))
-  const cellW = W.value / cols.value
-  const cellH = (H.value - 24) / rows
+  const positions = layout(props.stations)
   return props.stations.map((s, i) => {
-    const r = rng(hash(s.id))
-    const cx = (i % cols.value) * cellW + cellW / 2 + (r() - 0.5) * 24
-    const cy = Math.floor(i / cols.value) * cellH + cellH / 2 - 14 + (r() - 0.5) * 16
+    const { x: cx, y: cy } = positions[i]
     const models = [...(s.models || [])].sort((a, b) => b.created - a.created).slice(0, 8)
     const stars = models.map(m => {
       const mr = rng(hash(m.id))
