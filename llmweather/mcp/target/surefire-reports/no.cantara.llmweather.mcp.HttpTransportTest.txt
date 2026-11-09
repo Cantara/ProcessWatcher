@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: no.cantara.llmweather.mcp.HttpTransportTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.899 s -- in no.cantara.llmweather.mcp.HttpTransportTest

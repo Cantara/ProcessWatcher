@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "llmweather": {
-      "command": "java",
-      "args": ["-jar", "mcp/target/llmweather-mcp.jar", "--stdio"]
-    }
-  }
-}

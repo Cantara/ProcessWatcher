@@ -1,0 +1,233 @@
+{
+  "providers" : {
+    "openai" : [ {
+      "ts" : "2026-11-08T10:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 820
+    }, {
+      "ts" : "2026-11-08T14:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 790
+    }, {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 910
+    }, {
+      "ts" : "2026-11-08T22:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 860
+    }, {
+      "ts" : "2026-11-09T02:00:00Z",
+      "condition" : "PARTLY_CLOUDY",
+      "latencyMs" : 1400
+    }, {
+      "ts" : "2026-11-09T04:00:00Z",
+      "condition" : "CLOUDY",
+      "latencyMs" : 2300
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "RAIN",
+      "latencyMs" : 4100
+    }, {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "PARTLY_CLOUDY"
+    } ],
+    "anthropic" : [ {
+      "ts" : "2026-11-08T10:00:00Z",
+      "condition" : "RAIN",
+      "latencyMs" : 3200
+    }, {
+      "ts" : "2026-11-08T14:00:00Z",
+      "condition" : "RAIN",
+      "latencyMs" : 2900
+    }, {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "CLOUDY",
+      "latencyMs" : 1500
+    }, {
+      "ts" : "2026-11-08T22:00:00Z",
+      "condition" : "PARTLY_CLOUDY",
+      "latencyMs" : 1100
+    }, {
+      "ts" : "2026-11-09T02:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 700
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 650
+    }, {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "SUNNY"
+    } ],
+    "google" : [ {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "UNKNOWN"
+    } ],
+    "mistral" : [ {
+      "ts" : "2026-11-08T10:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 600
+    }, {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 640
+    }, {
+      "ts" : "2026-11-09T02:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 610
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 590
+    }, {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "STORM"
+    } ],
+    "xai" : [ {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "UNKNOWN"
+    } ],
+    "deepseek" : [ {
+      "ts" : "2026-11-08T18:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 1900
+    }, {
+      "ts" : "2026-11-09T06:00:00Z",
+      "condition" : "SUNNY",
+      "latencyMs" : 2100
+    }, {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "SUNNY"
+    } ],
+    "meta" : [ {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "UNKNOWN"
+    } ],
+    "cohere" : [ {
+      "ts" : "2026-11-09T06:28:16.240445816Z",
+      "condition" : "RAIN"
+    } ]
+  },
+  "models" : {
+    "openai/gpt-5.2" : {
+      "id" : "openai/gpt-5.2",
+      "name" : "OpenAI: GPT-5.2",
+      "created" : 1761955200,
+      "contextLength" : 400000,
+      "promptPerMTok" : 1.75,
+      "completionPerMTok" : 14.0
+    },
+    "openai/gpt-5-mini" : {
+      "id" : "openai/gpt-5-mini",
+      "name" : "OpenAI: GPT-5 Mini",
+      "created" : 1754524800,
+      "contextLength" : 400000,
+      "promptPerMTok" : 0.25,
+      "completionPerMTok" : 2.0
+    },
+    "openai/gpt-4o-mini" : {
+      "id" : "openai/gpt-4o-mini",
+      "name" : "OpenAI: GPT-4o Mini",
+      "created" : 1721260800,
+      "contextLength" : 128000,
+      "promptPerMTok" : 0.15,
+      "completionPerMTok" : 0.6
+    },
+    "anthropic/claude-opus-5.5" : {
+      "id" : "anthropic/claude-opus-5.5",
+      "name" : "Anthropic: Claude Opus 5.5",
+      "created" : 1762128000,
+      "contextLength" : 1000000,
+      "promptPerMTok" : 4.0,
+      "completionPerMTok" : 20.0
+    },
+    "anthropic/claude-sonnet-5.5" : {
+      "id" : "anthropic/claude-sonnet-5.5",
+      "name" : "Anthropic: Claude Sonnet 5.5",
+      "created" : 1759276800,
+      "contextLength" : 1000000,
+      "promptPerMTok" : 2.0,
+      "completionPerMTok" : 10.0
+    },
+    "anthropic/claude-haiku-5.5" : {
+      "id" : "anthropic/claude-haiku-5.5",
+      "name" : "Anthropic: Claude Haiku 5.5",
+      "created" : 1759276800,
+      "contextLength" : 1000000,
+      "promptPerMTok" : 0.1,
+      "completionPerMTok" : 0.5
+    },
+    "google/gemini-3-pro" : {
+      "id" : "google/gemini-3-pro",
+      "name" : "Google: Gemini 3 Pro",
+      "created" : 1761177600,
+      "contextLength" : 2000000,
+      "promptPerMTok" : 1.25,
+      "completionPerMTok" : 10.0
+    },
+    "google/gemini-2.5-flash" : {
+      "id" : "google/gemini-2.5-flash",
+      "name" : "Google: Gemini 2.5 Flash",
+      "created" : 1750118400,
+      "contextLength" : 1048576,
+      "promptPerMTok" : 0.3,
+      "completionPerMTok" : 2.5
+    },
+    "mistralai/mistral-large-3" : {
+      "id" : "mistralai/mistral-large-3",
+      "name" : "Mistral: Mistral Large 3",
+      "created" : 1760572800,
+      "contextLength" : 256000,
+      "promptPerMTok" : 2.0,
+      "completionPerMTok" : 6.0
+    },
+    "mistralai/mistral-small-latest" : {
+      "id" : "mistralai/mistral-small-latest",
+      "name" : "Mistral: Mistral Small",
+      "created" : 1742169600,
+      "contextLength" : 128000,
+      "promptPerMTok" : 0.1,
+      "completionPerMTok" : 0.3
+    },
+    "x-ai/grok-4" : {
+      "id" : "x-ai/grok-4",
+      "name" : "xAI: Grok 4",
+      "created" : 1752105600,
+      "contextLength" : 256000,
+      "promptPerMTok" : 3.0,
+      "completionPerMTok" : 15.0
+    },
+    "deepseek/deepseek-v4" : {
+      "id" : "deepseek/deepseek-v4",
+      "name" : "DeepSeek: DeepSeek V4",
+      "created" : 1761609600,
+      "contextLength" : 163840,
+      "promptPerMTok" : 0.27,
+      "completionPerMTok" : 1.1
+    },
+    "meta-llama/llama-4-maverick" : {
+      "id" : "meta-llama/llama-4-maverick",
+      "name" : "Meta: Llama 4 Maverick",
+      "created" : 1743984000,
+      "contextLength" : 1048576,
+      "promptPerMTok" : 0.15,
+      "completionPerMTok" : 0.6
+    },
+    "cohere/command-a" : {
+      "id" : "cohere/command-a",
+      "name" : "Cohere: Command A",
+      "created" : 1741824000,
+      "contextLength" : 256000,
+      "promptPerMTok" : 2.5,
+      "completionPerMTok" : 10.0
+    },
+    "openrouter/auto" : {
+      "id" : "openrouter/auto",
+      "name" : "Auto Router",
+      "created" : 1699401600,
+      "contextLength" : 2000000
+    }
+  },
+  "updatedAt" : "2026-11-09T06:28:16.240445816Z"
+}
