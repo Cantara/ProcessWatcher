@@ -73,7 +73,7 @@ onMounted(async () => {
     <p v-else-if="!forecast" class="card muted">Reading the instruments…</p>
 
     <template v-else>
-      <SkyChart :stations="stations" />
+      <SkyChart :stations="stations" :fronts="forecast.fronts" />
       <Hero :forecast="forecast" :reporting="reporting.length" :total="stations.length" />
       <AlertBanner :alerts="forecast.alerts" />
 
