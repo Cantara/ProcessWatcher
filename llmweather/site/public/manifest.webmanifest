@@ -1,0 +1,16 @@
+{
+  "name": "LLMWeather",
+  "short_name": "LLMWeather",
+  "description": "Today's weather across the LLM market: outages, latency, price fronts and the outlook.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d152c",
+  "theme_color": "#0d152c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

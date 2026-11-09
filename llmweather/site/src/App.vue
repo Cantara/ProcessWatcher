@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import SkyChart from './components/SkyChart.vue'
 import Hero from './components/Hero.vue'
 import AlertBanner from './components/AlertBanner.vue'
 import ProviderCard from './components/ProviderCard.vue'
@@ -72,6 +73,7 @@ onMounted(async () => {
     <p v-else-if="!forecast" class="card muted">Reading the instruments…</p>
 
     <template v-else>
+      <SkyChart :stations="stations" />
       <Hero :forecast="forecast" :reporting="reporting.length" :total="stations.length" />
       <AlertBanner :alerts="forecast.alerts" />
 

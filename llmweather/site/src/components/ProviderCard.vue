@@ -16,7 +16,7 @@ const modelCount = computed(() => (props.station.models || []).length)
 </script>
 
 <template>
-  <article class="card station">
+  <article class="card station" :id="`station-${station.id}`">
     <header class="head">
       <WeatherIcon :condition="station.condition" :size="52" />
       <div class="titles">

@@ -28,7 +28,7 @@ const author = computed(() => props.forecast.bulletinAuthor && props.forecast.bu
 </template>
 
 <style scoped>
-.hero { margin-top: 24px; padding: 26px 28px; background: linear-gradient(140deg, color-mix(in srgb, var(--accent-soft) 45%, var(--surface-1)) 0%, var(--surface-1) 55%); }
+.hero { margin-top: 16px; padding: 26px 28px; background: linear-gradient(140deg, color-mix(in srgb, var(--accent-soft) 45%, var(--surface-1)) 0%, var(--surface-1) 55%); }
 .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.85rem; margin-bottom: 12px; }
 .ago { opacity: 0.8; }
 h1 { font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 750; letter-spacing: -0.02em; margin-bottom: 14px; }
