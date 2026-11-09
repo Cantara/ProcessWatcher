@@ -17,6 +17,17 @@ jobs:
           cache: maven
       - run: mvn -B -f collector/pom.xml verify
 
+  mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: mvn -B -f mcp/pom.xml verify
+
   site:
     runs-on: ubuntu-latest
     steps:

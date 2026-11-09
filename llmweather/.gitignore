@@ -1,4 +1,5 @@
 .history/
 collector/target/
-site/node_modules/
+mcp/target/
 site/dist/
+site/node_modules/

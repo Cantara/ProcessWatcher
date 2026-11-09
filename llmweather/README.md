@@ -30,7 +30,10 @@ Status pages are instruments. This is the forecaster standing in front of the ma
 
 The site is an installable PWA: add it to a phone home screen and the last forecast opens offline.
 
-The whole forecast is also available as machine-readable JSON, see [docs/forecast-schema.md](docs/forecast-schema.md).
+The whole forecast is also available as machine-readable JSON, see [docs/forecast-schema.md](docs/forecast-schema.md),
+and to agents through the **MCP server** in `mcp/`: six read-only tools (`get_bulletin`, `get_conditions`,
+`get_alerts`, `get_fronts`, `get_model_prices`, `pick_fallback`), four resources and two prompts, over stdio or
+Streamable HTTP. See [docs/mcp.md](docs/mcp.md). Two Agent Skills in `skills/` teach a client when to use it.
 
 ## Data sources
 
@@ -50,8 +53,10 @@ Verify each `statusPage` URL still serves the Statuspage.io API before relying o
 ```
 collector/   Java 17+ Maven project. Collects, forecasts, writes forecast.json and history.json
 site/        Vite + Vue 3 static site that renders forecast.json
+mcp/         Java 17+ Maven project. Read-only MCP server over the published forecast (stdio or HTTP)
+skills/      Agent Skills that teach a client when and how to use the MCP server
 .github/     Hourly collect-build-deploy workflow for GitHub Pages, plus CI
-docs/        Data contract
+docs/        Data contract and MCP reference
 ```
 
 ## Running locally
@@ -87,6 +92,14 @@ Then run the site:
 cd ../site
 npm install
 npm run dev
+```
+
+Run the MCP server locally against the sample data:
+
+```bash
+cd ../mcp
+mvn package
+java -jar target/llmweather-mcp.jar --stdio --forecast ../site/public/data/forecast.json
 ```
 
 ## Deploying

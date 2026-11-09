@@ -21,6 +21,10 @@ project: LLMWeather
 language: en
 license: "Apache-2.0"
 runtime: Java, Node
+mcp:
+  description: Read-only MCP server exposing the forecast as tools, resources and prompts (see docs/mcp.md)
+  transport: [stdio, streamable-http]
+  tools: [get_bulletin, get_conditions, get_alerts, get_fronts, get_model_prices, pick_fallback]
 indexing: open
 updated: "2026-11-09"
 
@@ -41,3 +45,11 @@ units:
     audience: [agent, developer]
     validated: "2026-11-09"
     triggers: [schema, forecast.json, condition, pressure, fronts, rules]
+
+  - id: mcp
+    path: docs/mcp.md
+    intent: "How do agents read the forecast through the MCP server, which tools exist, how is it run?"
+    scope: integration
+    audience: [agent, developer]
+    validated: "2026-11-09"
+    triggers: [mcp, tools, pick_fallback, agent, skills, model context protocol]
